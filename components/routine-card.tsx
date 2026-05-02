@@ -97,22 +97,9 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false, in
     })
   }
 
-  // Estilos condicionales basados en el índice (Par: Celeste, Impar: Rosa)
-  // Usamos style inline para las sombras con variables CSS para mayor precisión si Tailwind no lo pilla bien,
-  // pero intentaremos con clases arbitrarias de Tailwind primero.
-  const borderColorClass = index % 2 === 0 ? "border-primary" : "border-secondary"
-
-  // Sombra personalizada tipo "neon glow"
-  const glowStyle = {
-    boxShadow: index % 2 === 0
-      ? "0 0 15px -3px var(--primary)"
-      : "0 0 15px -3px var(--secondary)"
-  }
-
   return (
     <Card
-      className={`flex flex-col border transition-shadow bg-card/50 ${borderColorClass}`}
-      style={glowStyle}
+      className="flex flex-col border transition-shadow bg-card/50 border-ring ring-[3px] ring-ring/50"
     >
       <CardHeader>
         <div className="flex items-start justify-between">

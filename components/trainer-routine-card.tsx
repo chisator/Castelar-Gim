@@ -128,19 +128,9 @@ export function TrainerRoutineCard({ routine, isPast = false, index = 0 }: Train
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  // Estilos condicionales
-  const borderColorClass = index % 2 === 0 ? "border-primary" : "border-secondary"
-
-  const glowStyle = {
-    boxShadow: index % 2 === 0
-      ? "0 0 15px -3px var(--primary)"
-      : "0 0 15px -3px var(--secondary)"
-  }
-
   return (
     <Card
-      className={`flex flex-col border transition-shadow bg-card/50 ${borderColorClass}`}
-      style={glowStyle}
+      className="flex flex-col border transition-shadow bg-card/50 border-ring ring-[3px] ring-ring/50"
     >
       <CardHeader>
         <div className="flex items-start justify-between">
