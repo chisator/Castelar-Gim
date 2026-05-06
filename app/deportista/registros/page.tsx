@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ChevronRight, ClipboardList, ChevronLeft } from "lucide-react"
+import { ChevronRight, ClipboardList, ChevronLeft, Trophy } from "lucide-react"
 import { Logo } from "@/components/logo"
 
 import { LogoutButton } from "@/components/logout-button"
@@ -97,9 +97,17 @@ export default async function RegistrosPage() {
             </header>
 
             <main className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Registro de Entrenamiento</h1>
-                    <p className="text-muted-foreground">Selecciona una rutina para ver tu historial o registrar una nueva sesión.</p>
+                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold mb-2">Registro de Entrenamiento</h1>
+                        <p className="text-muted-foreground">Selecciona una rutina para ver tu historial o registrar una nueva sesión.</p>
+                    </div>
+                    <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+                        <Link href="/deportista/registros/pr/nuevo">
+                            <Trophy className="w-4 h-4 mr-2" />
+                            Registrar PR
+                        </Link>
+                    </Button>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
