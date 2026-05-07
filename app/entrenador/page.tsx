@@ -9,6 +9,7 @@ import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
 import { TrainerUserFilter } from "@/components/trainer-user-filter"
 import { Logo } from "@/components/logo"
+import { ExportPdfButton } from "@/components/export-pdf-button"
 
 
 
@@ -128,6 +129,10 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       return routineEnd < today
     }) || []
 
+  const selectedAthlete = searchParams?.userId 
+    ? athletes?.find(a => a.id === searchParams.userId) || null
+    : null;
+
   return (
     <div className="w-full">
       <header className="border-b bg-white/50 backdrop-blur supports-[backdrop-filter]:bg-white/50">
@@ -179,8 +184,13 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             </Button>
           </div>
         </div>
-        <div className="mb-6">
-          <TrainerUserFilter athletes={athletes || []} />
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:items-center">
+          <div className="flex-1">
+            <TrainerUserFilter athletes={athletes || []} />
+          </div>
+          {searchParams?.userId && selectedAthlete && routines.length > 0 && (
+            <ExportPdfButton athlete={selectedAthlete} routines={routines} />
+          )}
         </div>
         <div className="grid gap-2 grid-cols-2 md:grid-cols-3 mb-8">
           <Card>
