@@ -83,3 +83,28 @@ export async function getExerciseCatalog() {
     return { data }
 }
 
+export async function getLatestPRForUserAndExercise(userId: string, exerciseId: string) {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Usuario no autenticado", data: null }
+    }
+
+    const { data, error } = await supabase
+        .from("personal_records")
+        .select("one_rm")
+        .eq("user_id", userId)
+        .eq("exercise_id", exerciseId)
+        .order("date", { ascending: false })
+        .limit(1)
+        .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is no rows returned
+        console.error("Error fetching latest PR:", error)
+        return { error: error.message, data: null }
+    }
+
+    return { data: data?.one_rm || null }
+}
+

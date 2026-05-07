@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/client"
 import { importRoutine } from "@/app/actions/trainer-actions"
+import { getLatestPRForUserAndExercise } from "@/app/actions/pr-actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
-import { Check, ChevronsUpDown, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, Percent, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Command,
@@ -39,6 +40,7 @@ interface Exercise {
   duration?: string
   notes?: string
   video_url?: string
+  catalog_id?: string
 }
 
 interface CreateRoutineFormProps {
@@ -56,6 +58,10 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [error, setError] = useState<string | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
+  // Track which exercise has the % popover open and loading state
+  const [openPercentIndex, setOpenPercentIndex] = useState<number | null>(null)
+  const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
+  const [prNotFoundIndex, setPrNotFoundIndex] = useState<number | null>(null)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -63,12 +69,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [selectedUserId, setSelectedUserId] = useState<string>("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "" }])
+  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "" }])
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "" }])
   }
 
   const removeExercise = (index: number) => {
@@ -84,13 +90,40 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const handleExerciseNameSelect = (index: number, item: ExerciseCatalogItem) => {
     const newExercises = [...exercises]
     // Update name
-    newExercises[index] = { ...newExercises[index], name: item.name }
+    newExercises[index] = { ...newExercises[index], name: item.name, catalog_id: item.id }
 
     // Auto-fill video if available and current is empty
     if (item.video_url && !newExercises[index].video_url) {
       newExercises[index].video_url = item.video_url
     }
     setExercises(newExercises)
+  }
+
+  const PERCENTAGES = Array.from({ length: 71 }, (_, i) => 30 + i) // 30 to 100
+
+  const handleApplyPercentage = async (index: number, pct: number) => {
+    const exercise = exercises[index]
+    const manualWeight = parseFloat(exercise.weight?.replace(/ ?kg$/i, "") || "")
+    setOpenPercentIndex(null)
+    setPrNotFoundIndex(null)
+
+    if (!isNaN(manualWeight) && manualWeight > 0) {
+      // Use manually entered weight
+      const result = Math.round((manualWeight * pct / 100) * 2) / 2 // round to nearest 0.5
+      updateExercise(index, "weight", String(result))
+    } else if (selectedUserId && exercise.catalog_id) {
+      // Fetch from DB
+      setLoadingPRIndex(index)
+      const res = await getLatestPRForUserAndExercise(selectedUserId, exercise.catalog_id)
+      setLoadingPRIndex(null)
+      if (res.data) {
+        const result = Math.round((res.data * pct / 100) * 2) / 2 // round to nearest 0.5
+        updateExercise(index, "weight", String(result))
+      } else {
+        setPrNotFoundIndex(index)
+        setTimeout(() => setPrNotFoundIndex(null), 2500)
+      }
+    }
   }
 
   // ... (maintain handleImportExercises and handleSubmit)
@@ -336,18 +369,57 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
-                    <div className="relative">
-                      <Input
-                        id={`exercise-weight-${index}`}
-                        placeholder="Ej: 20"
-                        value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
-                        onChange={(e) => updateExercise(index, "weight", e.target.value)}
-                        className="pr-8"
-                        type="number"
-                        step="0.5"
-                      />
-                      <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                    <div className="flex gap-1">
+                      <div className="relative flex-1">
+                        <Input
+                          id={`exercise-weight-${index}`}
+                          placeholder="Ej: 20"
+                          value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                          onChange={(e) => updateExercise(index, "weight", e.target.value)}
+                          className="pr-8"
+                          type="number"
+                          step="0.5"
+                        />
+                        <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                      </div>
+                      <Popover open={openPercentIndex === index} onOpenChange={(open) => setOpenPercentIndex(open ? index : null)}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 h-10 w-10 relative"
+                            title="Calcular % del 1RM"
+                          >
+                            {loadingPRIndex === index ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Percent className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-28" align="end">
+                          <div className="py-1 px-1">
+                            <p className="text-xs text-muted-foreground text-center py-1 font-medium border-b mb-1">% del 1RM</p>
+                            <div className="overflow-y-auto max-h-48 flex flex-col gap-0.5">
+                              {PERCENTAGES.map((pct) => (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() => handleApplyPercentage(index, pct)}
+                                  className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted transition-colors"
+                                >
+                                  {pct}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
+                    {prNotFoundIndex === index && (
+                      <p className="text-xs text-amber-600">No hay PR registrado para este ejercicio.</p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-duration-${index}`}>Descanso / Pausa</Label>
