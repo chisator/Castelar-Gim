@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
+import { Printer } from "lucide-react"
+import { useReactToPrint } from "react-to-print"
 
 interface ExportPdfButtonProps {
   athlete: { full_name: string } | null
@@ -10,33 +11,12 @@ interface ExportPdfButtonProps {
 }
 
 export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
-  const [isExporting, setIsExporting] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
 
-  const handleExport = async () => {
-    if (!printRef.current) return
-    setIsExporting(true)
-
-    try {
-      // Import html2pdf dynamically to avoid SSR issues
-      const html2pdf = (await import("html2pdf.js")).default
-      
-      const element = printRef.current
-      const opt = {
-        margin:       10,
-        filename:     `Rutinas_${athlete?.full_name?.replace(/\s+/g, '_') || 'Deportista'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      }
-
-      await html2pdf().set(opt).from(element).save()
-    } catch (error) {
-      console.error("Error generating PDF", error)
-    } finally {
-      setIsExporting(false)
-    }
-  }
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Rutinas_${athlete?.full_name?.replace(/\s+/g, '_') || 'Deportista'}`,
+  })
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "Sin fecha"
@@ -53,25 +33,27 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
   return (
     <>
       <Button 
-        onClick={handleExport} 
-        disabled={isExporting}
+        onClick={() => handlePrint()} 
         className="bg-primary hover:bg-primary/90 text-primary-foreground"
       >
-        <Download className="mr-2 h-4 w-4" />
-        {isExporting ? "Generando PDF..." : "Exportar PDF"}
+        <Printer className="mr-2 h-4 w-4" />
+        Imprimir / Guardar PDF
       </Button>
 
-      {/* Hidden container for PDF rendering */}
-      <div className="absolute left-[-9999px] top-0 overflow-hidden">
+      {/* Visually hidden but mounted for react-to-print to clone */}
+      <div className="hidden">
         <div 
           ref={printRef} 
-          className="bg-[#FFF3C4] text-black w-[800px] p-8"
-          style={{ fontFamily: "sans-serif" }}
+          className="p-8 bg-white text-black w-full"
+          style={{ 
+            fontFamily: "sans-serif",
+            WebkitPrintColorAdjust: "exact", 
+            printColorAdjust: "exact" 
+          }}
         >
           {/* Header */}
           <div className="flex justify-between items-center border-b-2 border-[#FF6B00] pb-4 mb-6">
             <div className="flex items-center gap-4">
-              {/* Fallback to simple text if logo doesn't load well in canvas */}
               <div>
                 <h1 className="text-3xl font-bold text-[#0ea5e9]">Castelar Gimnasio</h1>
                 <p className="text-lg text-gray-700 mt-1">Plan de Entrenamiento</p>
@@ -88,7 +70,7 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
             {routines.map((routine, idx) => {
               const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
               return (
-                <div key={routine.id || idx} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200" style={{ pageBreakInside: 'avoid' }}>
+                <div key={routine.id || idx} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
                   <div className="border-b-2 border-[#FF6B00] pb-2 mb-4">
                     <h2 className="text-2xl font-bold">{routine.title}</h2>
                     <p className="text-sm text-gray-600">
@@ -119,13 +101,13 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
                       </thead>
                       <tbody>
                         {exercises.map((ex: any, eIdx: number) => (
-                          <tr key={eIdx} className="border-b border-gray-200">
-                            <td className="p-2 border border-gray-300 font-medium">{ex.name}</td>
-                            <td className="p-2 border border-gray-300">{ex.sets || "-"}</td>
-                            <td className="p-2 border border-gray-300">{ex.reps || "-"}</td>
-                            <td className="p-2 border border-gray-300">{ex.weight ? `${ex.weight}${!ex.weight.toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
-                            <td className="p-2 border border-gray-300">{ex.duration || "-"}</td>
-                            <td className="p-2 border border-gray-300 text-xs italic">{ex.notes || "-"}</td>
+                          <tr key={eIdx} className="border-b border-gray-200 bg-white">
+                            <td className="p-2 border border-gray-300 font-medium text-black">{ex.name}</td>
+                            <td className="p-2 border border-gray-300 text-black">{ex.sets || "-"}</td>
+                            <td className="p-2 border border-gray-300 text-black">{ex.reps || "-"}</td>
+                            <td className="p-2 border border-gray-300 text-black">{ex.weight ? `${ex.weight}${!ex.weight.toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
+                            <td className="p-2 border border-gray-300 text-black">{ex.duration || "-"}</td>
+                            <td className="p-2 border border-gray-300 text-xs italic text-black">{ex.notes || "-"}</td>
                           </tr>
                         ))}
                       </tbody>
