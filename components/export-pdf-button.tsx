@@ -44,13 +44,17 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
       <div className="hidden">
         <div 
           ref={printRef} 
-          className="p-8 bg-white text-black w-full"
+          className="p-8 bg-white text-black w-[800px] mx-auto"
           style={{ 
             fontFamily: "sans-serif",
             WebkitPrintColorAdjust: "exact", 
             printColorAdjust: "exact" 
           }}
         >
+          <style type="text/css">
+            {`@page { size: A4 portrait; margin: 10mm; }`}
+          </style>
+
           {/* Header */}
           <div className="flex justify-between items-center border-b-2 border-[#FF6B00] pb-4 mb-6">
             <div className="flex items-center gap-4">
