@@ -44,7 +44,7 @@ export default function RootLayout({
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased relative min-h-screen`}
       >
         {/* Capas de Fondo */}
-        <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-sky-200 to-white" style={{ zIndex: 0 }} />
+        <div className="fixed inset-0 pointer-events-none bg-background" style={{ zIndex: 0 }} />
         <div className="fixed inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 1, opacity: 0.25 }}>
           <Image src="/logo.webp" alt="Background Logo" width={800} height={800} className="object-contain" priority />
         </div>

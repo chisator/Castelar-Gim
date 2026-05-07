@@ -130,7 +130,7 @@ export function TrainerRoutineCard({ routine, isPast = false, index = 0 }: Train
 
   return (
     <Card
-      className="flex flex-col border transition-shadow bg-card/50 border-ring ring-[3px] ring-ring/50"
+      className="flex flex-col border transition-shadow bg-card/50 border-primary ring-[3px] ring-primary/50"
     >
       <CardHeader>
         <div className="flex items-start justify-between">
