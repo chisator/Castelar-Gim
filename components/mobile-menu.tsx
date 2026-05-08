@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Menu } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
 import { Logo } from "@/components/logo"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 
 interface MobileMenuProps {
@@ -30,11 +31,11 @@ export function MobileMenu({ role }: MobileMenuProps) {
                     <Logo size={100} />
                     <SheetTitle className="mt-2 sr-only">Menú</SheetTitle>
                 </SheetHeader>
-
                 <div className="flex flex-col gap-4">
                     <Separator />
                     
-                    <div className="mt-auto pt-4 p-2">
+                    <div className="mt-auto pt-4 p-2 flex flex-col gap-4">
+                        <ThemeToggle />
                         <LogoutButton className="w-full justify-center" />
                     </div>
                 </div>

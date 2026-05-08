@@ -67,12 +67,12 @@ export default function LoginPage() {
             <Logo size={150} />
             {/*
             <div className="relative w-72 h-72 mr-2 top-20">
-              <Image src="/logo.png" alt="SITAS FITNESS" fill className="object-contain" priority />
+              <Image src="/Layer1000.svg" alt="SITAS FITNESS" fill className="object-contain" priority />
             </div>
             */}
             <p className="text-muted-foreground z-10">Sistema de gestión de entrenamientos</p>
           </div>
-          <Card className="z-20 bg-white/40 backdrop-blur-sm border-white/50 shadow-xl">
+          <Card className="z-20 bg-card/40 backdrop-blur-sm border-white/50 shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
               <CardDescription>Ingresa tus credenciales para acceder al sistema</CardDescription>

@@ -5,7 +5,7 @@ export function Logo({ size = 28 }: { size?: number }) {
     return (
         <div className="flex items-center justify-center">
             <Image 
-                src="/logo.webp" 
+                src="/Layer1000.svg" 
                 alt="Gimnasio Castelar" 
                 width={size} 
                 height={size}

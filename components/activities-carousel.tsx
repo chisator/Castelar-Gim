@@ -331,7 +331,7 @@ export function ActivitiesCarousel() {
                                                     <div key={day} className="flex items-start justify-between border-b border-white/20 pb-2 last:border-0 last:pb-0 text-sm font-medium">
                                                         <div className="flex flex-col gap-1 w-full">
                                                             <div className="flex items-center gap-2 mb-1">
-                                                                <Badge variant="secondary" className="bg-white/20 text-white border-0 capitalize w-24 justify-center backdrop-blur-sm shadow-sm">
+                                                                <Badge variant="secondary" className="bg-card/20 text-white border-0 capitalize w-24 justify-center backdrop-blur-sm shadow-sm">
                                                                     {day}
                                                                 </Badge>
                                                             </div>
@@ -350,7 +350,7 @@ export function ActivitiesCarousel() {
                                                                                         ? "bg-gray-500/40 text-white/60 cursor-not-allowed"
                                                                                         : userReservations.includes(slot.id)
                                                                                             ? "bg-green-500 text-white hover:bg-green-600"
-                                                                                            : "bg-white/10 text-white/90 hover:bg-white/20"
+                                                                                            : "bg-card/10 text-white/90 hover:bg-card/20"
                                                                                 }`}
                                                                             title={slot.isCancelled ? "Clase suspendida" : isSlotPast ? "Clase finalizada" : userReservations.includes(slot.id) ? "Reservado (Click para cancelar)" : `Instructor: ${slot.instructor} - Click para reservar`}
                                                                             onClick={(e) => {
@@ -389,8 +389,8 @@ export function ActivitiesCarousel() {
                     ))}
                 </CarouselContent>
                 <div className="hidden md:block">
-                    <CarouselPrevious className="left-4 bg-white/20 border-0 text-white hover:bg-white/40" />
-                    <CarouselNext className="right-4 bg-white/20 border-0 text-white hover:bg-white/40" />
+                    <CarouselPrevious className="left-4 bg-card/20 border-0 text-white hover:bg-card/40" />
+                    <CarouselNext className="right-4 bg-card/20 border-0 text-white hover:bg-card/40" />
                 </div>
                 <CarouselDots className="mt-6" />
             </Carousel>

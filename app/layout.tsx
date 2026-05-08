@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   title: "Castelar Gimnasio",
   description: "Castelar Gimnasio",
   icons: {
-    icon: "/logo.webp",
-    apple: "/logo.webp",
+    icon: "/Layer1000.svg",
+    apple: "/Layer1000.svg",
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -33,31 +33,42 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="light">
+    <html lang="es" suppressHydrationWarning>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased relative min-h-screen`}
       >
-        {/* Capas de Fondo */}
-        <div className="fixed inset-0 pointer-events-none bg-background" style={{ zIndex: 0 }} />
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 1, opacity: 0.25 }}>
-          <Image src="/logo.webp" alt="Background Logo" width={800} height={800} className="object-contain" priority />
-        </div>
-        
-        {/* Contenido Principal */}
-        <div className="relative" style={{ zIndex: 10 }}>
-          <ServiceWorkerUpdater />
-          <div className="pb-16 md:pb-0">
-            {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          {/* Capas de Fondo */}
+          <div className="fixed inset-0 pointer-events-none bg-background" style={{ zIndex: 0 }} />
+          <div className="fixed inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 1, opacity: 0.25 }}>
+            <Image src="/Layer1000.svg" alt="Background Logo" width={800} height={800} className="object-contain" priority />
           </div>
-          <Toaster />
-          <BottomNav />
-        </div>
+          
+          {/* Contenido Principal */}
+          <div className="relative" style={{ zIndex: 10 }}>
+            <ServiceWorkerUpdater />
+            <div className="pb-16 md:pb-0">
+              {children}
+            </div>
+            <Toaster />
+            <BottomNav />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

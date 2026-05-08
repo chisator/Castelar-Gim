@@ -84,7 +84,7 @@ export default async function DeportistaPage() {
 
   return (
     <div className="w-full">
-      <header className="border-b bg-white/50 backdrop-blur supports-[backdrop-filter]:bg-white/50">
+      <header className="border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto flex min-h-[5rem] items-center justify-between px-4 py-2 relative">
           <div className="flex items-center gap-3">
             <Logo size={80} />
@@ -101,7 +101,7 @@ export default async function DeportistaPage() {
 
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-black">{profile?.full_name}</p>
+              <p className="text-sm font-medium text-foreground">{profile?.full_name}</p>
               <Badge variant="secondary" className="text-xs hidden sm:inline-flex bg-sky-100 text-sky-800 border border-sky-300">
                 Deportista
               </Badge>
@@ -116,8 +116,8 @@ export default async function DeportistaPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-balance text-black">Bienvenido, {profile?.full_name}</h2>
-          <p className="text-gray-600 mt-1">Aquí puedes ver tus rutinas y seguir tu progreso</p>
+          <h2 className="text-3xl font-bold text-balance text-foreground">Bienvenido, {profile?.full_name}</h2>
+          <p className="text-muted-foreground mt-1">Aquí puedes ver tus rutinas y seguir tu progreso</p>
         </div>
 
         <div className="space-y-8">

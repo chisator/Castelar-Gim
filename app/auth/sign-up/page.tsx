@@ -62,7 +62,7 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6 bg-transparent">
-      <Card className="w-full max-w-md bg-white/40 backdrop-blur-sm border-white/50 shadow-xl">
+      <Card className="w-full max-w-md bg-card/40 backdrop-blur-sm border-white/50 shadow-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Crear cuenta</CardTitle>
           <CardDescription className="text-center">Regístrate para acceder al club deportivo</CardDescription>
