@@ -8,6 +8,8 @@ import { LogoutButton } from "@/components/logout-button"
 import { RoutineCard } from "@/components/routine-card"
 import Image from "next/image"
 import { Logo } from "@/components/logo"
+import { BannerCarousel } from "@/components/banner-carousel"
+import { getActiveBanners } from "@/app/actions/banner-actions"
 
 
 
@@ -64,6 +66,9 @@ export default async function DeportistaPage() {
   // Calcular estadísticas
   const totalRoutines = routinesWithTrainers?.length || 0
 
+  // Banners
+  const { banners } = await getActiveBanners()
+
   // Filtrar rutinas por fecha
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -113,6 +118,12 @@ export default async function DeportistaPage() {
           </div>
         </div>
       </header>
+
+      {banners && banners.length > 0 && (
+        <div className="w-full">
+          <BannerCarousel banners={banners} />
+        </div>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
