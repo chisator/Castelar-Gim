@@ -5,38 +5,66 @@ import { usePathname } from "next/navigation"
 import { Home, LineChart, ClipboardList, BookOpen, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MobileMenu } from "./mobile-menu"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/client"
 
 export function BottomNav() {
   const pathname = usePathname()
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    
+    async function getUserRole() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.user_metadata?.role) {
+        setUserRole(user.user_metadata.role)
+      }
+    }
+    
+    getUserRole()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user?.user_metadata?.role) {
+        setUserRole(session.user.user_metadata.role)
+      } else if (event === "SIGNED_OUT") {
+        setUserRole(null)
+      }
+    })
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
 
   // No mostrar en rutas de autenticación o la raíz si es un landing
   if (pathname.startsWith("/auth") || pathname === "/") {
     return null
   }
 
-  // Determinar rol por la ruta
-  const isDeportista = pathname.startsWith("/deportista")
-  const isAdmin = pathname.startsWith("/admin")
-  const isEntrenador = pathname.startsWith("/entrenador")
+  // Determinar rol por la ruta como fallback
+  const roleToUse = userRole || (
+    pathname.startsWith("/deportista") ? "deportista" : 
+    pathname.startsWith("/admin") ? "administrador" : 
+    pathname.startsWith("/entrenador") ? "entrenador" : ""
+  )
 
   let links: { href: string; label: string; icon: any }[] = []
-  let role = ""
+  let role = roleToUse
 
-  if (isDeportista) {
+  if (roleToUse === "deportista") {
     role = "deportista"
     links = [
       { href: "/deportista", label: "Inicio", icon: Home },
       { href: "/deportista/registros", label: "Registros", icon: ClipboardList },
       { href: "/deportista/progreso", label: "Progreso", icon: LineChart },
     ]
-  } else if (isAdmin) {
-    role = "administrador"
+  } else if (roleToUse === "administrador") {
     links = [
       { href: "/admin", label: "Inicio", icon: Home },
       { href: "/admin/ejercicios", label: "Catálogo", icon: BookOpen },
     ]
-  } else if (isEntrenador) {
-    role = "entrenador"
+  } else if (roleToUse === "entrenador") {
     links = [
       { href: "/entrenador", label: "Inicio", icon: Home },
       { href: "/admin/ejercicios", label: "Catálogo", icon: BookOpen },
