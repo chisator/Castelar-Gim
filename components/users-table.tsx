@@ -35,6 +35,8 @@ export function UsersTable({ users }: UsersTableProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [editPassword, setEditPassword] = useState("")
+  const [showEditPassword, setShowEditPassword] = useState(false)
   const [fullName, setFullName] = useState("")
   const [role, setRole] = useState<"deportista" | "entrenador" | "administrador">("deportista")
   const [activityCredits, setActivityCredits] = useState<Record<string, number>>({
@@ -152,6 +154,8 @@ export function UsersTable({ users }: UsersTableProps) {
     setEmail(user.email)
     setFullName(user.full_name)
     setRole(user.role)
+    setEditPassword("")
+    setShowEditPassword(false)
     const storedTickets = user.activity_credits || {}
     setActivityCredits({
       "Indoor Bike": storedTickets["Indoor Bike"] || 0,
@@ -167,13 +171,24 @@ export function UsersTable({ users }: UsersTableProps) {
     setIsLoading(true)
     setError(null)
 
-    const result = await updateUser({
+    const payload: any = {
       userId: editingUser.id,
       email,
       fullName,
       role,
       activityCredits
-    })
+    }
+
+    if (editPassword) {
+      if (editPassword.length < 6) {
+        setError("La contraseña debe tener mínimo 6 caracteres")
+        setIsLoading(false)
+        return
+      }
+      payload.password = editPassword
+    }
+
+    const result = await updateUser(payload)
 
     if (result.error) {
       setError(result.error)
@@ -186,6 +201,7 @@ export function UsersTable({ users }: UsersTableProps) {
     setEmail("")
     setFullName("")
     setRole("deportista")
+    setEditPassword("")
     setActivityCredits({ "Indoor Bike": 0, "Crossfit": 0, "Funcional": 0, "Box Training": 0 })
     setIsLoading(false)
   }
@@ -477,6 +493,40 @@ export function UsersTable({ users }: UsersTableProps) {
                   required
                 />
               </div>
+
+              {editingUser?.role !== "administrador" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-password">Nueva Contraseña (Opcional)</Label>
+                  <div className="relative">
+                    <Input
+                      id="edit-password"
+                      type={showEditPassword ? "text" : "password"}
+                      placeholder="Dejar en blanco para mantener la actual"
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      tabIndex={-1}
+                    >
+                      {showEditPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="sr-only">
+                        {showEditPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-2">
                   <Label>Tickets por Actividad (Mes Actual)</Label>

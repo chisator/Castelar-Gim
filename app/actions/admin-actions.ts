@@ -165,6 +165,7 @@ export async function updateUser(formData: {
   fullName: string
   role: "deportista" | "entrenador" | "administrador"
   activityCredits?: Record<string, number>
+  password?: string
 }) {
   try {
     const supabase = await createServerClient()
@@ -184,13 +185,23 @@ export async function updateUser(formData: {
     })
 
     // Actualizar email y metadata del usuario
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(formData.userId, {
+    const updateData: any = {
       email: formData.email,
       user_metadata: {
         full_name: formData.fullName,
         role: formData.role,
       },
-    })
+    }
+
+    if (formData.password) {
+      const { data: targetUser } = await supabaseAdmin.auth.admin.getUserById(formData.userId)
+      if (targetUser.user?.user_metadata?.role === "administrador") {
+        return { error: "No puedes cambiar la contraseña de otro administrador" }
+      }
+      updateData.password = formData.password
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(formData.userId, updateData)
 
     if (updateError) {
       return { error: updateError.message }
