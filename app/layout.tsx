@@ -4,6 +4,8 @@ import { GeistMono } from "geist/font/mono";
 import { ServiceWorkerUpdater } from "@/components/sw-updater";
 import { Toaster } from "@/components/ui/sonner";
 import { BottomNav } from "@/components/bottom-nav";
+import { GlobalNotification } from "@/components/global-notification";
+import { getActiveNotification } from "@/app/actions/notification-actions";
 import Image from "next/image";
 import "./globals.css";
 
@@ -37,11 +39,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { notification } = await getActiveNotification();
+
   return (
     <html lang="es" suppressHydrationWarning>
       <body
@@ -60,9 +64,10 @@ export default function RootLayout({
           </div>
           
           {/* Contenido Principal */}
-          <div className="relative" style={{ zIndex: 10 }}>
+          <div className="relative flex flex-col min-h-screen" style={{ zIndex: 10 }}>
             <ServiceWorkerUpdater />
-            <div className="pb-16 md:pb-0">
+            <GlobalNotification notification={notification || null} />
+            <div className="flex-1 pb-16 md:pb-0">
               {children}
             </div>
             <Toaster />

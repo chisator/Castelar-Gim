@@ -83,6 +83,9 @@ export default async function AdminPage() {
             <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               <Link href="/admin/banners">Banners</Link>
             </Button>
+            <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              <Link href="/admin/notificaciones">Avisos</Link>
+            </Button>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
