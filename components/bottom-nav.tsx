@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LineChart, ClipboardList, BookOpen, CalendarDays } from "lucide-react"
+import { Home, LineChart, ClipboardList, BookOpen, CalendarDays, ImageIcon, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MobileMenu } from "./mobile-menu"
 import { useState, useEffect } from "react"
@@ -63,6 +63,8 @@ export function BottomNav() {
     links = [
       { href: "/admin", label: "Inicio", icon: Home },
       { href: "/admin/ejercicios", label: "Catálogo", icon: BookOpen },
+      { href: "/admin/banners", label: "Banners", icon: ImageIcon },
+      { href: "/admin/notificaciones", label: "Avisos", icon: Bell },
     ]
   } else if (roleToUse === "entrenador") {
     links = [
