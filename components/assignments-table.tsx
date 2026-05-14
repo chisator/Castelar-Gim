@@ -17,13 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 interface AssignmentsTableProps {
   assignments: any[]
   users: any[]
+  totalPages?: number
 }
 
-export function AssignmentsTable({ assignments, users }: AssignmentsTableProps) {
+export function AssignmentsTable({ assignments, users, totalPages = 1 }: AssignmentsTableProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +38,18 @@ export function AssignmentsTable({ assignments, users }: AssignmentsTableProps) 
 
   const athletes = users.filter((u) => u.role === "deportista")
   const trainers = users.filter((u) => u.role === "entrenador")
+
+  const currentPage = Number(searchParams.get("assignmentsPage")) || 1
+
+  const updateSearchParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value) {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,6 +185,30 @@ export function AssignmentsTable({ assignments, users }: AssignmentsTableProps) 
             ))}
           </TableBody>
         </Table>
+
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Página {currentPage} de {totalPages}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("assignmentsPage", (currentPage - 1).toString())}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("assignmentsPage", (currentPage + 1).toString())}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

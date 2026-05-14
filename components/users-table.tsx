@@ -21,11 +21,17 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react"
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+
 interface UsersTableProps {
   users: any[]
+  totalPages?: number
 }
 
-export function UsersTable({ users }: UsersTableProps) {
+export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
@@ -46,16 +52,25 @@ export function UsersTable({ users }: UsersTableProps) {
     "Box Training": 0
   })
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
-  const [nameFilter, setNameFilter] = useState("")
-  const [roleFilter, setRoleFilter] = useState<string>("all")
 
-  const filteredUsers = users.filter((user) => {
-    const matchesName = user.full_name.toLowerCase().includes(nameFilter.toLowerCase())
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    return matchesName && matchesRole
-  })
+  const nameFilter = searchParams.get("usersSearch") || ""
+  const roleFilter = searchParams.get("usersRole") || "all"
+  const currentPage = Number(searchParams.get("usersPage")) || 1
 
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
+  const updateSearchParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value && value !== "all") {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    if (key !== "usersPage") {
+      params.set("usersPage", "1")
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const sortedUsers = [...users].sort((a, b) => {
     if (!sortConfig) return 0
 
     const { key, direction } = sortConfig
@@ -391,7 +406,7 @@ export function UsersTable({ users }: UsersTableProps) {
                   <Input
                     placeholder="Buscar nombre..."
                     value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
+                    onChange={(e) => updateSearchParam("usersSearch", e.target.value)}
                     className="h-8 text-xs"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -405,7 +420,7 @@ export function UsersTable({ users }: UsersTableProps) {
               <TableHead className="align-top pt-4">
                 <div className="flex flex-col gap-2">
                   <span className="font-bold py-0.5">Rol</span>
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <Select value={roleFilter} onValueChange={(val) => updateSearchParam("usersRole", val)}>
                     <SelectTrigger className="h-8 text-xs w-[130px]">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
@@ -463,6 +478,30 @@ export function UsersTable({ users }: UsersTableProps) {
             ))}
           </TableBody>
         </Table>
+
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Página {currentPage} de {totalPages}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("usersPage", (currentPage - 1).toString())}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("usersPage", (currentPage + 1).toString())}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
 
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent>

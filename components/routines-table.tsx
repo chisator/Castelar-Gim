@@ -6,18 +6,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { deleteRoutine } from "@/app/actions/trainer-actions"
-import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 interface RoutinesTableProps {
   routines: any[]
   trainers: any[]
   users?: any[]
+  totalPages?: number
 }
 
-export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableProps) {
+export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }: RoutinesTableProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const getTrainerName = (trainerId: string) => {
     return trainers.find(t => t.id === trainerId)?.full_name || "N/A"
   }
@@ -32,16 +36,24 @@ export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableP
     }).join(", ");
   }
 
-  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
-  const [titleFilter, setTitleFilter] = useState("")
-  const [trainerFilter, setTrainerFilter] = useState("all")
 
-  const filteredRoutines = routines.filter((routine) => {
-    const matchesTitle = routine.title.toLowerCase().includes(titleFilter.toLowerCase())
-    const matchesTrainer = trainerFilter === "all" || routine.trainer_id === trainerFilter
-    return matchesTitle && matchesTrainer
-  })
+  const titleFilter = searchParams.get("routinesSearch") || ""
+  const trainerFilter = searchParams.get("routinesTrainer") || "all"
+  const currentPage = Number(searchParams.get("routinesPage")) || 1
+
+  const updateSearchParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value && value !== "all") {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    if (key !== "routinesPage") {
+      params.set("routinesPage", "1")
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
 
   const handleDelete = async (routineId: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar esta rutina? Esta acción no se puede deshacer.")) {
@@ -80,7 +92,7 @@ export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableP
                     <Input
                       placeholder="Buscar título..."
                       value={titleFilter}
-                      onChange={(e) => setTitleFilter(e.target.value)}
+                      onChange={(e) => updateSearchParam("routinesSearch", e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
@@ -90,7 +102,7 @@ export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableP
                 <div className="flex flex-col gap-2 h-full justify-start">
                   <span className="font-bold py-1">Entrenador Asignado</span>
                   <div className="pb-2">
-                    <Select value={trainerFilter} onValueChange={setTrainerFilter}>
+                    <Select value={trainerFilter} onValueChange={(val) => updateSearchParam("routinesTrainer", val)}>
                       <SelectTrigger className="h-8 text-xs w-[180px]">
                         <SelectValue placeholder="Todos" />
                       </SelectTrigger>
@@ -132,7 +144,7 @@ export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRoutines.map((routine) => (
+            {routines.map((routine) => (
               <TableRow key={routine.id}>
                 <TableCell className="font-medium">{routine.title}</TableCell>
                 <TableCell>
@@ -163,6 +175,30 @@ export function RoutinesTable({ routines, trainers, users = [] }: RoutinesTableP
             ))}
           </TableBody>
         </Table>
+
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Página {currentPage} de {totalPages}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("routinesPage", (currentPage - 1).toString())}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateSearchParam("routinesPage", (currentPage + 1).toString())}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

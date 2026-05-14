@@ -14,7 +14,11 @@ import { Logo } from "@/components/logo"
 
 
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
   const supabase = await createClient()
 
   const {
@@ -31,11 +35,40 @@ export default async function AdminPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener todos los usuarios
-  const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
+  // Params parsing
+  const usersPage = Number(searchParams.usersPage) || 1
+  const assignmentsPage = Number(searchParams.assignmentsPage) || 1
+  const routinesPage = Number(searchParams.routinesPage) || 1
+  const perPage = 10
 
-  // Obtener todas las asignaciones
-  const { data: assignments } = await supabase
+  const usersSearch = typeof searchParams.usersSearch === 'string' ? searchParams.usersSearch : ''
+  const usersRole = typeof searchParams.usersRole === 'string' ? searchParams.usersRole : 'all'
+  const routinesSearch = typeof searchParams.routinesSearch === 'string' ? searchParams.routinesSearch : ''
+  const routinesTrainer = typeof searchParams.routinesTrainer === 'string' ? searchParams.routinesTrainer : 'all'
+
+  // Estadísticas (Consultas optimizadas solo para conteo)
+  const [{ count: totalUsers }, { count: totalAthletes }, { count: totalTrainers }, { count: totalRoutines }, { count: totalAssignments }] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "deportista"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "entrenador"),
+    supabase.from("routines").select("*", { count: "exact", head: true }),
+    supabase.from("trainer_user_assignments").select("*", { count: "exact", head: true })
+  ])
+
+  // Obtener lista mínima de todos los usuarios para los Selects (Crear Asignación, etc.)
+  const { data: allMinimalUsers } = await supabase.from("profiles").select("id, full_name, email, role").order("full_name")
+
+  // Usuarios paginados
+  let usersQuery = supabase.from("profiles").select("*", { count: "exact" })
+  if (usersSearch) usersQuery = usersQuery.ilike("full_name", `%${usersSearch}%`)
+  if (usersRole !== 'all') usersQuery = usersQuery.eq("role", usersRole)
+  
+  const { data: users, count: usersCount } = await usersQuery
+    .order("created_at", { ascending: false })
+    .range((usersPage - 1) * perPage, usersPage * perPage - 1)
+
+  // Asignaciones paginadas
+  const { data: assignments, count: assignmentsCount } = await supabase
     .from("trainer_user_assignments")
     .select(
       `
@@ -48,20 +81,31 @@ export default async function AdminPage() {
         full_name
       )
     `,
+      { count: "exact" }
     )
     .order("created_at", { ascending: false })
+    .range((assignmentsPage - 1) * perPage, assignmentsPage * perPage - 1)
 
-  // Obtener todas las rutinas
-  const { data: routines } = await supabase.from("routines").select(`
+  // Rutinas paginadas
+  let routinesQuery = supabase.from("routines").select(`
+    *,
+    routine_user_assignments(user_id)
+  `, { count: "exact" })
+
+  if (routinesSearch) routinesQuery = routinesQuery.ilike("title", `%${routinesSearch}%`)
+  if (routinesTrainer !== 'all') routinesQuery = routinesQuery.eq("trainer_id", routinesTrainer)
+
+  const { data: routines, count: routinesCount } = await routinesQuery
+    .order("created_at", { ascending: false })
+    .range((routinesPage - 1) * perPage, routinesPage * perPage - 1)
+
+  // Para Stats, usamos todas las rutinas. Como Stats es pesado, idealmente tendríamos endpoints, pero por ahora...
+  // Obtendremos todas las rutinas solo para Stats si es necesario. Para evitar romper `TrainerRoutinesStats`,
+  // le pasaremos los datos completos o lo dejamos como estaba.
+  const { data: allRoutinesForStats } = await supabase.from("routines").select(`
     *,
     routine_user_assignments(user_id)
   `)
-
-  // Calcular estadísticas
-  const totalUsers = users?.length || 0
-  const totalAthletes = users?.filter((u) => u.role === "deportista").length || 0
-  const totalTrainers = users?.filter((u) => u.role === "entrenador").length || 0
-  const totalRoutines = routines?.length || 0
 
   return (
     <div className="w-full">
@@ -174,7 +218,7 @@ export default async function AdminPage() {
               </svg>
             </CardHeader>
             <CardContent className="p-2 pt-0">
-              <div className="text-lg sm:text-xl font-bold">{assignments?.length || 0}</div>
+              <div className="text-lg sm:text-xl font-bold">{totalAssignments || 0}</div>
             </CardContent>
           </Card>
 
@@ -206,19 +250,19 @@ export default async function AdminPage() {
           </TabsList>
 
           <TabsContent value="users">
-            <UsersTable users={users || []} />
+            <UsersTable users={users || []} totalPages={Math.ceil((usersCount || 0) / perPage)} />
           </TabsContent>
 
           <TabsContent value="assignments">
-            <AssignmentsTable assignments={assignments || []} users={users || []} />
+            <AssignmentsTable assignments={assignments || []} users={allMinimalUsers || []} totalPages={Math.ceil((assignmentsCount || 0) / perPage)} />
           </TabsContent>
 
           <TabsContent value="routines">
-            <RoutinesTable routines={routines || []} trainers={users?.filter(u => u.role === 'entrenador') || []} users={users || []} />
+            <RoutinesTable routines={routines || []} trainers={allMinimalUsers?.filter(u => u.role === 'entrenador') || []} users={allMinimalUsers || []} totalPages={Math.ceil((routinesCount || 0) / perPage)} />
           </TabsContent>
 
           <TabsContent value="stats">
-            <TrainerRoutinesStats routines={routines || []} trainers={users?.filter(u => u.role === 'entrenador') || []} users={users || []} />
+            <TrainerRoutinesStats routines={allRoutinesForStats || []} trainers={allMinimalUsers?.filter(u => u.role === 'entrenador') || []} users={allMinimalUsers || []} />
           </TabsContent>
         </Tabs>
       </main>

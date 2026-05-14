@@ -30,41 +30,45 @@ export default async function DeportistaPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener rutinas asignadas al usuario via routine_user_assignments
+  // Obtener rutinas asignadas al usuario y sus entrenadores en una sola consulta
   const { data: routineAssignments } = await supabase
     .from("routine_user_assignments")
-    .select("routine_id")
+    .select(`
+      routines (
+        *,
+        trainer:profiles!routines_trainer_id_fkey (
+          full_name
+        )
+      )
+    `)
     .eq("user_id", user.id)
 
-  const routineIds = routineAssignments?.map((r: any) => r.routine_id) || []
+  // Extraer, aplanar y ordenar las rutinas
+  let routinesWithTrainers = routineAssignments
+    ?.map((assignment: any) => {
+      if (!assignment.routines) return null;
+      // Supabase puede devolver un arreglo si la relación es 1:N o un objeto si es N:1
+      // routine_user_assignments -> routines es N:1 (cada asignación tiene 1 rutina)
+      const routine = Array.isArray(assignment.routines) ? assignment.routines[0] : assignment.routines;
+      if (!routine) return null;
+      
+      return {
+        ...routine,
+        // El alias trainer puede venir como objeto o arreglo dependiendo de cómo supabase infiera la relación
+        trainer: Array.isArray(routine.trainer) ? routine.trainer[0] : routine.trainer,
+      };
+    })
+    .filter(Boolean) || [];
 
-  // Obtener rutinas sin join complejo
-  const { data: routines } = routineIds.length
-    ? await supabase
-      .from("routines")
-      .select("*")
-      .in("id", routineIds)
-      .order("end_date", { ascending: true })
-    : { data: [] }
-
-  // Obtener entrenadores manualmente
-  const trainerIds = Array.from(new Set(routines?.map((r) => r.trainer_id).filter(Boolean))) as string[]
-
-  const { data: trainers } = trainerIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name").in("id", trainerIds)
-    : { data: [] }
-
-  // Mapear entrenadores a rutinas
-  const routinesWithTrainers = routines?.map((routine) => {
-    const trainer = trainers?.find((t) => t.id === routine.trainer_id)
-    return {
-      ...routine,
-      trainer: trainer ? { full_name: trainer.full_name } : null,
-    }
-  })
+  // Ordenar rutinas por fecha de fin
+  routinesWithTrainers.sort((a, b) => {
+    const dateA = a.end_date ? new Date(a.end_date).getTime() : 0;
+    const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
+    return dateA - dateB;
+  });
 
   // Calcular estadísticas
-  const totalRoutines = routinesWithTrainers?.length || 0
+  const totalRoutines = routinesWithTrainers.length || 0
 
   // Banners
   const { banners } = await getActiveBanners()
