@@ -1,10 +1,19 @@
-FROM node:18-alpine AS base
+FROM node:20-slim AS base
 
 # Dependencias
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+
+# 1. Limpiamos cualquier caché previo y actualizamos npm
+RUN npm cache clean --force && npm install -g npm@latest
+
+# 2. Instalamos las dependencias
+RUN npm install
+
+# 3. FIX: Instalamos explícitamente los binarios nativos de Tailwind v4 para Linux
+# Esto soluciona el bug conocido de NPM con dependencias opcionales en Docker
+RUN npm install @tailwindcss/oxide-linux-x64-gnu --no-save
 
 # Constructor
 FROM base AS builder
