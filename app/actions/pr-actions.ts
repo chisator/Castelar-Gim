@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient as createServerClient } from "@/lib/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 
 export async function savePersonalRecord(exerciseId: string, weight: number, reps: number, dateStr: string) {
@@ -91,7 +92,14 @@ export async function getLatestPRForUserAndExercise(userId: string, exerciseId: 
         return { error: "Usuario no autenticado", data: null }
     }
 
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS, because the trainer needs to fetch the athlete's PR
+    const supabaseAdmin = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    )
+
+    const { data, error } = await supabaseAdmin
         .from("personal_records")
         .select("one_rm")
         .eq("user_id", userId)
