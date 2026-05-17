@@ -9,7 +9,7 @@ export async function createUser(formData: {
   password: string
   fullName: string
   role: "deportista" | "entrenador" | "administrador"
-  activityCredits?: Record<string, number>
+  telefono?: string
 }) {
   try {
     console.log("[v0] Starting user creation:", formData.email)
@@ -71,7 +71,7 @@ export async function createUser(formData: {
           email: formData.email,
           full_name: formData.fullName,
           role: formData.role,
-          activity_credits: formData.activityCredits || {}
+          telefono: formData.telefono || null
         },
         { onConflict: "id" },
       )
@@ -164,7 +164,7 @@ export async function updateUser(formData: {
   email: string
   fullName: string
   role: "deportista" | "entrenador" | "administrador"
-  activityCredits?: Record<string, number>
+  telefono?: string
   password?: string
 }) {
   try {
@@ -214,7 +214,7 @@ export async function updateUser(formData: {
         email: formData.email,
         full_name: formData.fullName,
         role: formData.role,
-        activity_credits: formData.activityCredits || {}
+        telefono: formData.telefono || null
       })
       .eq("id", formData.userId)
 

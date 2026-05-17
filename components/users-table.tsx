@@ -44,13 +44,8 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const [editPassword, setEditPassword] = useState("")
   const [showEditPassword, setShowEditPassword] = useState(false)
   const [fullName, setFullName] = useState("")
+  const [telefono, setTelefono] = useState("")
   const [role, setRole] = useState<"deportista" | "entrenador" | "administrador">("deportista")
-  const [activityCredits, setActivityCredits] = useState<Record<string, number>>({
-    "Indoor Bike": 0,
-    "Crossfit": 0,
-    "Funcional": 0,
-    "Box Training": 0
-  })
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
 
   const nameFilter = searchParams.get("usersSearch") || ""
@@ -145,7 +140,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
       password,
       fullName,
       role,
-      activityCredits
+      telefono
     })
 
     if (result.error) {
@@ -158,8 +153,8 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     setEmail("")
     setPassword("")
     setFullName("")
+    setTelefono("")
     setRole("deportista")
-    setActivityCredits({ "Indoor Bike": 0, "Crossfit": 0, "Funcional": 0, "Box Training": 0 })
     setError(null)
     setIsLoading(false)
   }
@@ -168,16 +163,10 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     setEditingUser(user)
     setEmail(user.email)
     setFullName(user.full_name)
+    setTelefono(user.telefono || "")
     setRole(user.role)
     setEditPassword("")
     setShowEditPassword(false)
-    const storedTickets = user.activity_credits || {}
-    setActivityCredits({
-      "Indoor Bike": storedTickets["Indoor Bike"] || 0,
-      "Crossfit": storedTickets["Crossfit"] || 0,
-      "Funcional": storedTickets["Funcional"] || 0,
-      "Box Training": storedTickets["Box Training"] || 0
-    })
     setIsEditOpen(true)
   }
 
@@ -191,7 +180,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
       email,
       fullName,
       role,
-      activityCredits
+      telefono
     }
 
     if (editPassword) {
@@ -215,9 +204,9 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     setEditingUser(null)
     setEmail("")
     setFullName("")
+    setTelefono("")
     setRole("deportista")
     setEditPassword("")
-    setActivityCredits({ "Indoor Bike": 0, "Crossfit": 0, "Funcional": 0, "Box Training": 0 })
     setIsLoading(false)
   }
 
@@ -252,10 +241,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     )
   }
 
-  const getTotalCredits = (credits: Record<string, number> | null) => {
-    if (!credits) return 0
-    return Object.values(credits).reduce((acc, val) => acc + (val || 0), 0)
-  }
+
 
   return (
     <Card>
@@ -271,8 +257,8 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
               setEmail("")
               setPassword("")
               setFullName("")
+              setTelefono("")
               setRole("deportista")
-              setActivityCredits({ "Indoor Bike": 0, "Crossfit": 0, "Funcional": 0, "Box Training": 0 })
               setError(null)
               setShowPassword(false)
             }
@@ -310,6 +296,17 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label htmlFor="telefono">Teléfono</Label>
+                  <Input
+                    id="telefono"
+                    type="tel"
+                    placeholder="+54 11 1234-5678"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="password">Contraseña</Label>
                   <div className="relative">
                     <Input
@@ -342,23 +339,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                   </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <Label>Tickets por Actividad (Mes Actual)</Label>
-                  <div className="grid grid-cols-2 gap-4 border p-3 rounded-md">
-                    {Object.keys(activityCredits).map((activity) => (
-                      <div key={activity} className="grid gap-1">
-                        <Label htmlFor={`create-${activity}`} className="text-xs text-muted-foreground">{activity}</Label>
-                        <Input
-                          id={`create-${activity}`}
-                          type="number"
-                          min="0"
-                          value={activityCredits[activity]}
-                          onChange={(e) => setActivityCredits({ ...activityCredits, [activity]: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+
 
                 <div className="grid gap-2">
                   <Label htmlFor="role">Rol</Label>
@@ -433,11 +414,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                   </Select>
                 </div>
               </TableHead>
-              <TableHead className="align-top pt-4">
-                <div className="flex flex-col gap-2">
-                  <span className="font-bold py-0.5">Créditos</span>
-                </div>
-              </TableHead>
+
               <TableHead className="align-top pt-4">
                 <div className="flex flex-col gap-2">
                   <Button variant="ghost" onClick={() => requestSort("created_at")} className="hover:bg-transparent px-0 font-bold justify-start h-auto p-0">
@@ -457,7 +434,6 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                 <TableCell className="font-medium">{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{getRoleBadge(user.role)}</TableCell>
-                <TableCell>{getTotalCredits(user.activity_credits)}</TableCell>
                 <TableCell>{new Date(user.created_at).toLocaleDateString("es-ES")}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -533,6 +509,17 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                 />
               </div>
 
+              <div className="grid gap-2">
+                <Label htmlFor="edit-telefono">Teléfono</Label>
+                <Input
+                  id="edit-telefono"
+                  type="tel"
+                  placeholder="+54 11 1234-5678"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                />
+              </div>
+
               {editingUser?.role !== "administrador" && (
                 <div className="grid gap-2">
                   <Label htmlFor="edit-password">Nueva Contraseña (Opcional)</Label>
@@ -567,23 +554,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                 </div>
               )}
 
-              <div className="grid gap-2">
-                  <Label>Tickets por Actividad (Mes Actual)</Label>
-                  <div className="grid grid-cols-2 gap-4 border p-3 rounded-md">
-                    {Object.keys(activityCredits).map((activity) => (
-                      <div key={activity} className="grid gap-1">
-                        <Label htmlFor={`edit-${activity}`} className="text-xs text-muted-foreground">{activity}</Label>
-                        <Input
-                          id={`edit-${activity}`}
-                          type="number"
-                          min="0"
-                          value={activityCredits[activity]}
-                          onChange={(e) => setActivityCredits({ ...activityCredits, [activity]: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-              </div>
+
 
               <div className="grid gap-2">
                 <Label htmlFor="edit-role">Rol</Label>
