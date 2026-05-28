@@ -265,7 +265,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[400px] p-0">
+              <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0">
                 <Command>
                   <CommandInput placeholder="Buscar deportista..." />
                   <CommandList>
