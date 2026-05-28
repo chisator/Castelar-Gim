@@ -10,6 +10,7 @@ import Link from "next/link"
 import { TrainerUserFilter } from "@/components/trainer-user-filter"
 import { Logo } from "@/components/logo"
 import { ExportPdfButton } from "@/components/export-pdf-button"
+import { CreateUserDialog } from "@/components/create-user-dialog"
 
 
 
@@ -182,6 +183,11 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
                 Nueva Rutina
               </Link>
             </Button>
+            <CreateUserDialog
+              currentUserRole="entrenador"
+              triggerSize="lg"
+              triggerClassName="text-xs sm:text-base"
+            />
           </div>
         </div>
         <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:items-center">

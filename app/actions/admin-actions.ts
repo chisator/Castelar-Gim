@@ -27,9 +27,15 @@ export async function createUser(formData: {
 
     const userRole = user.user_metadata?.role
 
-    if (userRole !== "administrador") {
-      console.log("[v0] User is not admin:", userRole)
+    if (userRole !== "administrador" && userRole !== "entrenador") {
+      console.log("[v0] User is not admin/trainer:", userRole)
       return { error: "No tienes permisos para crear usuarios" }
+    }
+
+    // Si el caller es entrenador, forzar rol deportista
+    const effectiveRole = userRole === "entrenador" ? "deportista" : formData.role
+    if (userRole === "entrenador") {
+      console.log("[v0] Trainer creating user — forcing deportista role")
     }
 
     // Crear cliente con service role para tener permisos de admin
@@ -48,7 +54,7 @@ export async function createUser(formData: {
       email_confirm: true,
       user_metadata: {
         full_name: formData.fullName,
-        role: formData.role,
+        role: effectiveRole,
       },
     })
 
@@ -70,7 +76,7 @@ export async function createUser(formData: {
           id: newUser.user?.id,
           email: formData.email,
           full_name: formData.fullName,
-          role: formData.role,
+          role: effectiveRole,
           telefono: formData.telefono || null
         },
         { onConflict: "id" },
@@ -80,7 +86,7 @@ export async function createUser(formData: {
     }
 
     // Asignación automática a todos los entrenadores si es deportista
-    if (formData.role === "deportista") {
+    if (effectiveRole === "deportista") {
       try {
         // Obtener todos los entrenadores
         const { data: trainers, error: trainersError } = await supabaseAdmin
@@ -105,11 +111,12 @@ export async function createUser(formData: {
           }
         }
       } catch (assignCatchError) {
-        console.error("[v0] Unexpected error in auto-assignment:", assignCatchError)
+          console.error("[v0] Unexpected error in auto-assignment:", assignCatchError)
       }
     }
 
     revalidatePath("/admin")
+    revalidatePath("/entrenador")
 
     return { success: true, user: newUser }
   } catch (error: any) {

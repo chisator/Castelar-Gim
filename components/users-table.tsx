@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
-import { createUser, updateUser, deleteUser } from "@/app/actions/admin-actions"
+import { updateUser, deleteUser } from "@/app/actions/admin-actions"
+import { CreateUserDialog } from "@/components/create-user-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +17,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react"
@@ -32,15 +32,12 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
   const [editPassword, setEditPassword] = useState("")
   const [showEditPassword, setShowEditPassword] = useState(false)
   const [fullName, setFullName] = useState("")
@@ -104,59 +101,6 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     ) : (
       <ArrowDown className="ml-2 h-4 w-4" />
     )
-  }
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    if (!fullName.trim()) {
-      setError("El nombre completo es requerido")
-      setIsLoading(false)
-      return
-    }
-
-    if (!email.trim()) {
-      setError("El email es requerido")
-      setIsLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setError("La contraseña debe tener mínimo 6 caracteres")
-      setIsLoading(false)
-      return
-    }
-
-    if (!role) {
-      setError("Debes seleccionar un rol")
-      setIsLoading(false)
-      return
-    }
-
-    const result = await createUser({
-      email,
-      password,
-      fullName,
-      role,
-      telefono
-    })
-
-    if (result.error) {
-      setError(result.error)
-      setIsLoading(false)
-      return
-    }
-
-    setIsOpen(false)
-    setEmail("")
-    setPassword("")
-    setFullName("")
-    setTelefono("")
-    setRole("deportista")
-    setError(null)
-    setIsLoading(false)
   }
 
   const handleEditClick = (user: any) => {
@@ -251,123 +195,10 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
             <CardTitle>Gestión de Usuarios</CardTitle>
             <CardDescription>Administra los usuarios del club deportivo</CardDescription>
           </div>
-          <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open)
-            if (!open) {
-              setEmail("")
-              setPassword("")
-              setFullName("")
-              setTelefono("")
-              setRole("deportista")
-              setError(null)
-              setShowPassword(false)
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button>Crear Usuario</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                <DialogDescription>Registra un nuevo usuario en el sistema</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="fullName">Nombre Completo</Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Juan Pérez"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="usuario@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="telefono">Teléfono</Label>
-                  <Input
-                    id="telefono"
-                    type="tel"
-                    placeholder="+54 11 1234-5678"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Mínimo 6 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="sr-only">
-                        {showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      </span>
-                    </Button>
-                  </div>
-                </div>
-
-
-
-                <div className="grid gap-2">
-                  <Label htmlFor="role">Rol</Label>
-                  <Select value={role} onValueChange={(value: any) => setRole(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="deportista">Deportista</SelectItem>
-                      <SelectItem value="entrenador">Entrenador</SelectItem>
-                      <SelectItem value="administrador">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
-
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={isLoading} className="flex-1">
-                    {isLoading ? "Creando..." : "Crear Usuario"}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <CreateUserDialog
+            currentUserRole="administrador"
+            onUserCreated={() => router.refresh()}
+          />
         </div>
       </CardHeader>
       <CardContent>
