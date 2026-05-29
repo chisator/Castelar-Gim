@@ -1,0 +1,22 @@
+services:
+  castelar-web:
+    build: .
+    container_name: castelar-web
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.castelar.entrypoints=websecure"
+      - "traefik.http.routers.castelar.rule=Host(`clubcastelar.com`)"
+      - "traefik.http.routers.castelar.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.castelar.loadbalancer.server.port=3000"
+    networks:
+      - default
+      - root_default
+
+networks:
+  root_default:
+    external: true
