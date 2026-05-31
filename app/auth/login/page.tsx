@@ -8,9 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
-import Image from "next/image"
 import { Logo } from "@/components/logo"
 
 export default function LoginPage() {
@@ -18,7 +17,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [introPhase, setIntroPhase] = useState<"intro" | "done">("intro")
   const router = useRouter()
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("__splash_active") === "1") {
+      sessionStorage.removeItem("__splash_active")
+      setIntroPhase("done")
+      return
+    }
+    const timer = setTimeout(() => setIntroPhase("done"), 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,6 +51,9 @@ export default function LoginPage() {
       if (user) {
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
 
+        window.dispatchEvent(new CustomEvent("splash:trigger"))
+        await new Promise((resolve) => setTimeout(resolve, 50))
+
         // Redirigir según el rol
         if (profile?.role === "deportista") {
           router.push("/deportista")
@@ -59,20 +72,42 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6 bg-transparent">
+      {introPhase === "intro" && (
+        <div
+          className="fixed inset-0 z-50 bg-background"
+          style={{ animation: "login-overlay-fade 1.8s ease-in-out forwards" }}
+        />
+      )}
       <div className="w-full max-w-md relative bottom-20">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center text-center">
-            {/* Logo eliminado por rebranding */}
-            {/* Logo principal */}
-            <Logo size={150} />
-            {/*
-            <div className="relative w-72 h-72 mr-2 top-20">
-              <Image src="/Layer1000.svg" alt="SITAS FITNESS" fill className="object-contain" priority />
+            <div
+              className={introPhase === "intro" ? "relative z-[60]" : undefined}
+              style={
+                introPhase === "intro"
+                  ? { animation: "login-logo-intro 1.6s ease-in-out forwards" }
+                  : undefined
+              }
+            >
+              <Logo size={150} />
             </div>
-            */}
-            <p className="text-muted-foreground z-10">Sistema de gestión de entrenamientos</p>
+            <p
+              className={
+                introPhase === "done"
+                  ? "text-muted-foreground z-10 opacity-100 transition-opacity duration-500"
+                  : "text-muted-foreground z-10 opacity-0"
+              }
+            >
+              Sistema de gestión de entrenamientos
+            </p>
           </div>
-          <Card className="z-20 bg-card/40 backdrop-blur-sm border-white/50 shadow-xl">
+          <Card
+            className={
+              introPhase === "done"
+                ? "z-20 bg-card/40 backdrop-blur-sm border-white/50 shadow-xl opacity-100 transition-opacity duration-500"
+                : "z-20 bg-card/40 backdrop-blur-sm border-white/50 shadow-xl opacity-0"
+            }
+          >
             <CardHeader>
               <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
               <CardDescription>Ingresa tus credenciales para acceder al sistema</CardDescription>

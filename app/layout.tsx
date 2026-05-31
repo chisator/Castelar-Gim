@@ -5,6 +5,7 @@ import { ServiceWorkerUpdater } from "@/components/sw-updater";
 import { Toaster } from "@/components/ui/sonner";
 import { BottomNav } from "@/components/bottom-nav";
 import { GlobalNotification } from "@/components/global-notification";
+import { SplashOverlay } from "@/components/SplashOverlay";
 import { getActiveNotification } from "@/app/actions/notification-actions";
 import Image from "next/image";
 import "./globals.css";
@@ -73,6 +74,7 @@ export default async function RootLayout({
             <Toaster />
             <BottomNav />
           </div>
+          <SplashOverlay />
         </ThemeProvider>
       </body>
     </html>

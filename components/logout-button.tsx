@@ -18,6 +18,8 @@ export function LogoutButton({ className, iconOnly = false }: LogoutButtonProps)
 
   const handleLogout = async () => {
     setIsLoading(true)
+    window.dispatchEvent(new CustomEvent("splash:trigger"))
+    await new Promise((resolve) => setTimeout(resolve, 50))
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")

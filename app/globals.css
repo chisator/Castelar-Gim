@@ -154,3 +154,25 @@
 
   /* Logo de fondo eliminado */
 }
+
+@keyframes login-logo-intro {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(3.5); }
+  85%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes login-overlay-fade {
+  0%, 70% { opacity: 1; }
+  100%    { opacity: 0; }
+}
+
+@keyframes login-content-in {
+  0%, 85% { opacity: 0; }
+  100%    { opacity: 1; }
+}
+
+@keyframes splash-logo-burst {
+  0%   { transform: scale(0.3) translateY(-15vh); }
+  100% { transform: scale(5)   translateY(0); }
+}
