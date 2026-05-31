@@ -51,8 +51,14 @@ export default function LoginPage() {
       if (user) {
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
 
-        window.dispatchEvent(new CustomEvent("splash:trigger"))
-        await new Promise((resolve) => setTimeout(resolve, 50))
+        const loginLogoEl = document.querySelector('[data-splash-source="login"]') as HTMLElement | null
+        const sourceRect = loginLogoEl?.getBoundingClientRect() ?? null
+
+        window.dispatchEvent(
+          new CustomEvent("splash:trigger", {
+            detail: { mode: "login-to-panel", sourceRect },
+          })
+        )
 
         // Redirigir según el rol
         if (profile?.role === "deportista") {
@@ -82,6 +88,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center text-center">
             <div
+              data-splash-source="login"
               className={introPhase === "intro" ? "relative z-[60]" : undefined}
               style={
                 introPhase === "intro"

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
 import { Logo } from "@/components/logo"
@@ -17,6 +17,12 @@ interface MobileMenuProps {
 export function MobileMenu({ role }: MobileMenuProps) {
     const [open, setOpen] = useState(false)
 
+    useEffect(() => {
+        const handler = () => setOpen(false)
+        window.addEventListener("splash:trigger", handler)
+        return () => window.removeEventListener("splash:trigger", handler)
+    }, [])
+
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -27,10 +33,12 @@ export function MobileMenu({ role }: MobileMenuProps) {
             </SheetTrigger>
             <SheetContent side="bottom" className="w-full rounded-t-xl px-4 pb-6 pt-2">
                 <div className="mx-auto mt-2 mb-6 h-1.5 w-12 rounded-full bg-muted" />
-                <SheetHeader className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-6">
+                <div data-splash-source="menu" className="inline-flex">
                     <Logo size={100} />
-                    <SheetTitle className="mt-2 sr-only">Menú</SheetTitle>
-                </SheetHeader>
+                </div>
+                <SheetTitle className="mt-2 sr-only">Menú</SheetTitle>
+            </div>
                 <div className="flex flex-col gap-4">
                     <Separator />
                     

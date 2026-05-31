@@ -95,7 +95,7 @@ export default async function DeportistaPage() {
     <div className="w-full">
       <header className="border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto flex min-h-[5rem] items-center justify-between px-4 py-2 relative">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-splash-target="header">
             <Logo size={80} />
           </div>
 

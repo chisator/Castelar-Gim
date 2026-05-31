@@ -18,7 +18,31 @@ export function LogoutButton({ className, iconOnly = false }: LogoutButtonProps)
 
   const handleLogout = async () => {
     setIsLoading(true)
-    window.dispatchEvent(new CustomEvent("splash:trigger"))
+
+    const menuEl = document.querySelector('[data-splash-source="menu"]') as HTMLElement | null
+    const headerEl = (
+      document.querySelector('[data-splash-target-logo]') ||
+      document.querySelector('[data-splash-target="header"]')
+    ) as HTMLElement | null
+
+    let sourceRect: { top: number; left: number; width: number; height: number } | null = null
+
+    const menuRect = menuEl?.getBoundingClientRect()
+    if (menuRect && menuRect.width > 0) {
+      sourceRect = menuRect
+    } else {
+      const headerRect = headerEl?.getBoundingClientRect()
+      if (headerRect && headerRect.width > 0) {
+        sourceRect = headerRect
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("splash:trigger", {
+        detail: { mode: "logout-to-login", sourceRect },
+      })
+    )
+
     await new Promise((resolve) => setTimeout(resolve, 50))
     const supabase = createClient()
     await supabase.auth.signOut()
