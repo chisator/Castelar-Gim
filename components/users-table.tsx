@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { updateUser, deleteUser } from "@/app/actions/admin-actions"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +49,20 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const roleFilter = searchParams.get("usersRole") || "all"
   const currentPage = Number(searchParams.get("usersPage")) || 1
 
+  const [localNameFilter, setLocalNameFilter] = useState(nameFilter)
+  const nameDidMountRef = useRef(false)
+
+  useEffect(() => {
+    if (!nameDidMountRef.current) {
+      nameDidMountRef.current = true
+      return
+    }
+    const timer = setTimeout(() => {
+      updateSearchParam("usersSearch", localNameFilter)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localNameFilter])
+
   const updateSearchParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value && value !== "all") {
@@ -59,7 +73,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     if (key !== "usersPage") {
       params.set("usersPage", "1")
     }
-    router.push(`${pathname}?${params.toString()}`)
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   const sortedUsers = [...users].sort((a, b) => {
@@ -217,8 +231,8 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
                   </Button>
                   <Input
                     placeholder="Buscar nombre..."
-                    value={nameFilter}
-                    onChange={(e) => updateSearchParam("usersSearch", e.target.value)}
+                    value={localNameFilter}
+                    onChange={(e) => setLocalNameFilter(e.target.value)}
                     className="h-8 text-xs"
                     onClick={(e) => e.stopPropagation()}
                   />

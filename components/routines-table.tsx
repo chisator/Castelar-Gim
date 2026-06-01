@@ -9,7 +9,7 @@ import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 interface RoutinesTableProps {
   routines: any[]
@@ -42,6 +42,20 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
   const trainerFilter = searchParams.get("routinesTrainer") || "all"
   const currentPage = Number(searchParams.get("routinesPage")) || 1
 
+  const [localTitleFilter, setLocalTitleFilter] = useState(titleFilter)
+  const titleDidMountRef = useRef(false)
+
+  useEffect(() => {
+    if (!titleDidMountRef.current) {
+      titleDidMountRef.current = true
+      return
+    }
+    const timer = setTimeout(() => {
+      updateSearchParam("routinesSearch", localTitleFilter)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localTitleFilter])
+
   const updateSearchParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value && value !== "all") {
@@ -52,7 +66,7 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
     if (key !== "routinesPage") {
       params.set("routinesPage", "1")
     }
-    router.push(`${pathname}?${params.toString()}`)
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   const handleDelete = async (routineId: string) => {
@@ -91,8 +105,8 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
                   <div className="pb-2">
                     <Input
                       placeholder="Buscar título..."
-                      value={titleFilter}
-                      onChange={(e) => updateSearchParam("routinesSearch", e.target.value)}
+                      value={localTitleFilter}
+                      onChange={(e) => setLocalTitleFilter(e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
