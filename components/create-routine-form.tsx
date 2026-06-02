@@ -96,10 +96,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   }
 
   const addUserSlot = () => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => [...prev, ""])
   }
 
   const removeUserSlot = (idx: number) => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => {
       if (prev.length <= 1) return prev
       return prev.filter((_, i) => i !== idx)
@@ -160,7 +162,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setIsLoading(true)
     setError(null)
 
-    const validUserIds = selectedUserIds.filter(Boolean)
+    const validUserIds = [...new Set(selectedUserIds.filter(Boolean))]
     if (validUserIds.length === 0) {
       setError("Debes seleccionar al menos un usuario deportista")
       setIsLoading(false)

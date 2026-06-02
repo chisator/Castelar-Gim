@@ -60,14 +60,15 @@ export default function LoginPage() {
           })
         )
 
-        // Redirigir según el rol
-        if (profile?.role === "deportista") {
-          router.push("/deportista")
-        } else if (profile?.role === "entrenador") {
-          router.push("/entrenador")
-        } else if (profile?.role === "administrador") {
-          router.push("/admin")
-        }
+        setTimeout(() => {
+          if (profile?.role === "deportista") {
+            router.push("/deportista")
+          } else if (profile?.role === "entrenador") {
+            router.push("/entrenador")
+          } else if (profile?.role === "administrador") {
+            router.push("/admin")
+          }
+        }, 100)
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Error al iniciar sesión")

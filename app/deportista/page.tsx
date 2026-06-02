@@ -44,7 +44,7 @@ export default async function DeportistaPage() {
     .eq("user_id", user.id)
 
   // Extraer, aplanar y ordenar las rutinas
-  let routinesWithTrainers = routineAssignments
+  const routinesWithTrainers = routineAssignments
     ?.map((assignment: any) => {
       if (!assignment.routines) return null;
       // Supabase puede devolver un arreglo si la relación es 1:N o un objeto si es N:1

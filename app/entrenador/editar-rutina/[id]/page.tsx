@@ -28,7 +28,7 @@ export default async function EditRoutinePage({ params }: PageProps) {
   )
 
   // Obtener la rutina
-  let query = supabaseAdmin
+  const query = supabaseAdmin
     .from("routines")
     .select("*")
     .eq("id", params.id)

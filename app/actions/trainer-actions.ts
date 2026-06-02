@@ -57,7 +57,7 @@ export async function updateRoutine(formData: {
       updatePayload.trainer_id = formData.trainerId
     }
 
-    let query = supabaseAdmin.from("routines").update(updatePayload).eq("id", formData.routineId)
+    const query = supabaseAdmin.from("routines").update(updatePayload).eq("id", formData.routineId)
 
     const { error: updateError } = await query
 

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
 import { SmartNumberInput } from "@/components/smart-number-input"
@@ -43,12 +43,12 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   // ... (maintain existing state)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [openCombobox, setOpenCombobox] = useState(false)
+  const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
 
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
-  const initialUserId = assignedUserIds.length > 0 ? assignedUserIds[0] : (routine.user_id || "")
-  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId)
+  const initialUserIds = assignedUserIds.length > 0 ? assignedUserIds : [routine.user_id || ""]
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(initialUserIds)
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(routine.trainer_id)
   const [startDate, setStartDate] = useState(
     routine.start_date ? String(routine.start_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : ""
@@ -81,13 +81,35 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
     setExercises(newExercises)
   }
 
+  const updateSelectedUserAt = (idx: number, userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = [...prev]
+      next[idx] = userId
+      return next
+    })
+  }
+
+  const addUserSlot = () => {
+    setOpenComboboxIndex(null)
+    setSelectedUserIds((prev) => [...prev, ""])
+  }
+
+  const removeUserSlot = (idx: number) => {
+    setOpenComboboxIndex(null)
+    setSelectedUserIds((prev) => {
+      if (prev.length <= 1) return prev
+      return prev.filter((_, i) => i !== idx)
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
 
-    if (!selectedUserId) {
-      setError("Debes seleccionar un usuario deportista")
+    const validUserIds = [...new Set(selectedUserIds.filter(Boolean))]
+    if (validUserIds.length === 0) {
+      setError("Debes seleccionar al menos un usuario deportista")
       setIsLoading(false)
       return
     }
@@ -108,7 +130,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
       routineId: routine.id,
       title,
       description,
-      userIds: [selectedUserId],
+      userIds: validUserIds,
       startDate,
       endDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
@@ -169,51 +191,66 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
             </div>
 
             <div className="grid gap-2">
-              <Label>Usuario Deportista</Label>
-              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openCombobox}
-                    className="w-full justify-between"
-                    type="button"
-                  >
-                    {selectedUserId
-                      ? sortedAthletes.find((athlete) => athlete.id === selectedUserId)?.full_name
-                      : "Seleccionar deportista..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar deportista..." />
-                    <CommandList>
-                      <CommandEmpty>No se encontró deportista.</CommandEmpty>
-                      <CommandGroup>
-                        {sortedAthletes.map((athlete) => (
-                          <CommandItem
-                            key={athlete.id}
-                            value={athlete.full_name.toLowerCase()}
-                            onSelect={() => {
-                              setSelectedUserId(athlete.id === selectedUserId ? "" : athlete.id)
-                              setOpenCombobox(false)
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                "opacity-100"
-                              )}
-                            />
-                            {athlete.full_name} ({athlete.email})
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Label>Usuario(s) Deportista(s)</Label>
+              {selectedUserIds.map((userId, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Popover open={openComboboxIndex === idx} onOpenChange={(open) => setOpenComboboxIndex(open ? idx : null)}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openComboboxIndex === idx}
+                        className="flex-1 justify-between"
+                        type="button"
+                      >
+                        {userId
+                          ? sortedAthletes.find((athlete) => athlete.id === userId)?.full_name
+                          : "Seleccionar deportista..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0">
+                      <Command>
+                        <CommandInput placeholder="Buscar deportista..." />
+                        <CommandList>
+                          <CommandEmpty>No se encontró deportista.</CommandEmpty>
+                          <CommandGroup>
+                            {sortedAthletes
+                              .filter((a) => !selectedUserIds.some((uid, i) => i !== idx && uid === a.id))
+                              .map((athlete) => (
+                                <CommandItem
+                                  key={athlete.id}
+                                  value={athlete.full_name.toLowerCase()}
+                                  onSelect={() => {
+                                    updateSelectedUserAt(idx, athlete.id === userId ? "" : athlete.id)
+                                    setOpenComboboxIndex(null)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      userId === athlete.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {athlete.full_name} ({athlete.email})
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {selectedUserIds.length > 1 && (
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeUserSlot(idx)} className="shrink-0">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addUserSlot} className="w-fit">
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar Deportista
+              </Button>
               {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
             </div>
           </div>
