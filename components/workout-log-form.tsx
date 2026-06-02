@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createWorkoutLog, updateWorkoutLog } from "@/app/actions/workout-actions"
-import { Plus, Trash2, Save, ChevronDown, ChevronUp } from "lucide-react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Plus, Trash2, Save } from "lucide-react"
 import { toast } from "sonner"
 
 interface SetData {
@@ -32,7 +31,7 @@ interface WorkoutLogFormProps {
     existingLog?: any // If editing
 }
 
-export function WorkoutLogForm({ routineId, routineTitle, initialExercises, existingLog }: WorkoutLogFormProps) {
+export function WorkoutLogForm({ routineId, initialExercises, existingLog }: WorkoutLogFormProps) {
     const router = useRouter()
     const [date, setDate] = useState(existingLog ? new Date(existingLog.date).toISOString().split('T')[0] : new Date().toLocaleDateString('en-CA'))
     const [notes, setNotes] = useState(existingLog?.notes || "")
@@ -58,13 +57,6 @@ export function WorkoutLogForm({ routineId, routineTitle, initialExercises, exis
             }))
         }
     })
-
-    // State to manage open/closed exercises in UI
-    const [openExercises, setOpenExercises] = useState<Record<number, boolean>>({})
-
-    const toggleExercise = (index: number) => {
-        setOpenExercises(prev => ({ ...prev, [index]: !prev[index] }))
-    }
 
     const updateEntry = (index: number, field: keyof LogEntry, value: any) => {
         const newEntries = [...entries]
