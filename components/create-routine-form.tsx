@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
-import { Check, ChevronsUpDown, Plus, Percent, Loader2 } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, Percent, Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Command,
@@ -57,7 +57,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
-  const [openCombobox, setOpenCombobox] = useState(false)
+  const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   // Track which exercise has the % popover open and loading state
   const [openPercentIndex, setOpenPercentIndex] = useState<number | null>(null)
   const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
@@ -66,7 +66,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(isAdmin ? "" : creatorId)
-  const [selectedUserId, setSelectedUserId] = useState<string>("")
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([""])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "" }])
@@ -85,6 +85,25 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     const newExercises = [...exercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
     setExercises(newExercises)
+  }
+
+  const updateSelectedUserAt = (idx: number, userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = [...prev]
+      next[idx] = userId
+      return next
+    })
+  }
+
+  const addUserSlot = () => {
+    setSelectedUserIds((prev) => [...prev, ""])
+  }
+
+  const removeUserSlot = (idx: number) => {
+    setSelectedUserIds((prev) => {
+      if (prev.length <= 1) return prev
+      return prev.filter((_, i) => i !== idx)
+    })
   }
 
   const handleExerciseNameSelect = (index: number, item: ExerciseCatalogItem) => {
@@ -111,10 +130,10 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
       // Use manually entered weight
       const result = Math.round((manualWeight * pct / 100) * 2) / 2 // round to nearest 0.5
       updateExercise(index, "weight", String(result))
-    } else if (selectedUserId && exercise.catalog_id) {
+    } else if (selectedUserIds.find(Boolean) && exercise.catalog_id) {
       // Fetch from DB
       setLoadingPRIndex(index)
-      const res = await getLatestPRForUserAndExercise(selectedUserId, exercise.catalog_id)
+      const res = await getLatestPRForUserAndExercise(selectedUserIds.find(Boolean) || "", exercise.catalog_id)
       setLoadingPRIndex(null)
       if (res.data) {
         const result = Math.round((res.data * pct / 100) * 2) / 2 // round to nearest 0.5
@@ -141,8 +160,9 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setIsLoading(true)
     setError(null)
 
-    if (!selectedUserId) {
-      setError("Debes seleccionar un usuario deportista")
+    const validUserIds = selectedUserIds.filter(Boolean)
+    if (validUserIds.length === 0) {
+      setError("Debes seleccionar al menos un usuario deportista")
       setIsLoading(false)
       return
     }
@@ -168,7 +188,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
         start_date: startDate ? new Date(startDate).toISOString() : "",
         end_date: endDate ? new Date(endDate).toISOString() : "",
         exercises: validExercises,
-        userIds: [selectedUserId],
+        userIds: validUserIds,
         trainerId: selectedTrainerId,
       })
 
@@ -178,7 +198,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
         start_date: startDate ? new Date(startDate).toISOString() : "",
         end_date: endDate ? new Date(endDate).toISOString() : "",
         exercises: validExercises,
-        userIds: [selectedUserId],
+        userIds: validUserIds,
         trainerId: selectedTrainerId,
       })
 
@@ -249,51 +269,66 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
           </div>
 
           <div className="grid gap-2">
-            <Label>Usuario Deportista</Label>
-            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openCombobox}
-                  className="w-full justify-between"
-                  type="button"
-                >
-                  {selectedUserId
-                    ? sortedAthletes.find((athlete) => athlete.id === selectedUserId)?.full_name
-                    : "Seleccionar deportista..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0">
-                <Command>
-                  <CommandInput placeholder="Buscar deportista..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontró deportista.</CommandEmpty>
-                    <CommandGroup>
-                      {sortedAthletes.map((athlete) => (
-                        <CommandItem
-                          key={athlete.id}
-                          value={athlete.full_name.toLowerCase()}
-                          onSelect={() => {
-                            setSelectedUserId(athlete.id === selectedUserId ? "" : athlete.id)
-                            setOpenCombobox(false)
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedUserId === athlete.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {athlete.full_name} ({athlete.email})
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Label>Usuario(s) Deportista(s)</Label>
+            {selectedUserIds.map((userId, idx) => (
+              <div key={idx} className="flex gap-2">
+                <Popover open={openComboboxIndex === idx} onOpenChange={(open) => setOpenComboboxIndex(open ? idx : null)}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openComboboxIndex === idx}
+                      className="flex-1 justify-between"
+                      type="button"
+                    >
+                      {userId
+                        ? sortedAthletes.find((athlete) => athlete.id === userId)?.full_name
+                        : "Seleccionar deportista..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar deportista..." />
+                      <CommandList>
+                        <CommandEmpty>No se encontró deportista.</CommandEmpty>
+                        <CommandGroup>
+                          {sortedAthletes
+                            .filter((a) => !selectedUserIds.some((uid, i) => i !== idx && uid === a.id))
+                            .map((athlete) => (
+                              <CommandItem
+                                key={athlete.id}
+                                value={athlete.full_name.toLowerCase()}
+                                onSelect={() => {
+                                  updateSelectedUserAt(idx, athlete.id === userId ? "" : athlete.id)
+                                  setOpenComboboxIndex(null)
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    userId === athlete.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {athlete.full_name} ({athlete.email})
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {selectedUserIds.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeUserSlot(idx)} className="shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={addUserSlot} className="w-fit">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Deportista
+            </Button>
             {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
           </div>
 
