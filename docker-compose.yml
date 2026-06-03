@@ -3,20 +3,21 @@ services:
     build: .
     container_name: castelar-web
     restart: always
-    ports:
-      - "3000:3000"
     env_file:
       - .env
+    environment:
+      - HOSTNAME=0.0.0.0
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.castelar.entrypoints=websecure"
-      - "traefik.http.routers.castelar.rule=Host(`clubcastelar.com`)"
-      - "traefik.http.routers.castelar.tls.certresolver=mytlschallenge"
-      - "traefik.http.services.castelar.loadbalancer.server.port=3000"
-    networks:
-      - default
-      - root_default
+      - "traefik.docker.network=root_default"
+      - "traefik.http.routers.castelar-web.entrypoints=websecure"
+      - "traefik.http.routers.castelar-web.rule=Host(`clubcastelar.com`)"
+      - "traefik.http.routers.castelar-web.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.castelar-web.loadbalancer.server.port=3000"
+    # No declaramos 'networks' aquí: el servicio usará la red default del stack,
+    # que abajo redefinimos para que sea 'root_default'.
 
 networks:
-  root_default:
+  default:
+    name: root_default
     external: true
