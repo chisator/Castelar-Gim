@@ -24,11 +24,30 @@ interface LogEntry {
     order: number
 }
 
+interface RoutineExercise {
+    name: string
+}
+
+interface ExistingLogEntry {
+    id: string
+    exercise_name: string
+    sets_data: SetData[]
+    notes: string | null
+    order: number
+}
+
+interface ExistingLog {
+    id: string
+    date: string
+    notes?: string | null
+    entries?: ExistingLogEntry[]
+}
+
 interface WorkoutLogFormProps {
     routineId: string
     routineTitle: string
-    initialExercises: any[] // From routine definition
-    existingLog?: any // If editing
+    initialExercises: RoutineExercise[] // From routine definition
+    existingLog?: ExistingLog // If editing
 }
 
 export function WorkoutLogForm({ routineId, initialExercises, existingLog }: WorkoutLogFormProps) {
@@ -40,7 +59,7 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
     // Initialize entries
     const [entries, setEntries] = useState<LogEntry[]>(() => {
         if (existingLog && existingLog.entries) {
-            return existingLog.entries.map((entry: any) => ({
+            return existingLog.entries.map((entry: ExistingLogEntry) => ({
                 id: entry.id,
                 exercise_name: entry.exercise_name,
                 sets_data: Array.isArray(entry.sets_data) ? entry.sets_data : [],
@@ -58,7 +77,7 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
         }
     })
 
-    const updateEntry = (index: number, field: keyof LogEntry, value: any) => {
+    const updateEntry = (index: number, field: keyof LogEntry, value: LogEntry[keyof LogEntry]) => {
         const newEntries = [...entries]
         newEntries[index] = { ...newEntries[index], [field]: value }
         setEntries(newEntries)
@@ -119,8 +138,8 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
 
             router.push(`/deportista/registros/${routineId}`)
             router.refresh()
-        } catch (error: any) {
-            toast.error(error.message || "Error al guardar")
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Error al guardar")
         } finally {
             setIsLoading(false)
         }

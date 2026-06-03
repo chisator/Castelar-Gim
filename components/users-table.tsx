@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { updateUser, deleteUser } from "@/app/actions/admin-actions"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,8 +23,17 @@ import { ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
+interface Profile {
+  id: string
+  email: string
+  full_name: string
+  telefono?: string | null
+  role: "deportista" | "entrenador" | "administrador"
+  created_at: string
+}
+
 interface UsersTableProps {
-  users: any[]
+  users: Profile[]
   totalPages?: number
 }
 
@@ -33,7 +42,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<any>(null)
+  const [editingUser, setEditingUser] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,7 +52,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const [fullName, setFullName] = useState("")
   const [telefono, setTelefono] = useState("")
   const [role, setRole] = useState<"deportista" | "entrenador" | "administrador">("deportista")
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Profile; direction: "asc" | "desc" } | null>(null)
 
   const nameFilter = searchParams.get("usersSearch") || ""
   const roleFilter = searchParams.get("usersRole") || "all"
@@ -52,18 +61,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
   const [localNameFilter, setLocalNameFilter] = useState(nameFilter)
   const nameDidMountRef = useRef(false)
 
-  useEffect(() => {
-    if (!nameDidMountRef.current) {
-      nameDidMountRef.current = true
-      return
-    }
-    const timer = setTimeout(() => {
-      updateSearchParam("usersSearch", localNameFilter)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [localNameFilter])
-
-  const updateSearchParam = (key: string, value: string) => {
+  const updateSearchParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value && value !== "all") {
       params.set(key, value)
@@ -74,15 +72,26 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
       params.set("usersPage", "1")
     }
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  }, [searchParams, pathname, router])
+
+  useEffect(() => {
+    if (!nameDidMountRef.current) {
+      nameDidMountRef.current = true
+      return
+    }
+    const timer = setTimeout(() => {
+      updateSearchParam("usersSearch", localNameFilter)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localNameFilter, updateSearchParam])
 
   const sortedUsers = [...users].sort((a, b) => {
     if (!sortConfig) return 0
 
     const { key, direction } = sortConfig
 
-    let aValue = a[key]
-    let bValue = b[key]
+    let aValue = String(a[key] ?? "")
+    let bValue = String(b[key] ?? "")
 
     if (key === "full_name") {
       aValue = aValue.toLowerCase()
@@ -98,7 +107,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     return 0
   })
 
-  const requestSort = (key: string) => {
+  const requestSort = (key: keyof Profile) => {
     let direction: "asc" | "desc" = "asc"
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc"
@@ -106,7 +115,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     setSortConfig({ key, direction })
   }
 
-  const getSortIcon = (key: string) => {
+  const getSortIcon = (key: keyof Profile) => {
     if (!sortConfig || sortConfig.key !== key) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />
     }
@@ -117,7 +126,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     )
   }
 
-  const handleEditClick = (user: any) => {
+  const handleEditClick = (user: Profile) => {
     setEditingUser(user)
     setEmail(user.email)
     setFullName(user.full_name)
@@ -133,8 +142,15 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
     setIsLoading(true)
     setError(null)
 
-    const payload: any = {
-      userId: editingUser.id,
+    const payload: {
+      userId: string
+      email: string
+      fullName: string
+      role: "deportista" | "entrenador" | "administrador"
+      telefono: string
+      password?: string
+    } = {
+      userId: editingUser!.id,
       email,
       fullName,
       role,
@@ -403,7 +419,7 @@ export function UsersTable({ users, totalPages = 1 }: UsersTableProps) {
 
               <div className="grid gap-2">
                 <Label htmlFor="edit-role">Rol</Label>
-                <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                <Select value={role} onValueChange={(value: "deportista" | "entrenador" | "administrador") => setRole(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

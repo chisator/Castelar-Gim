@@ -34,7 +34,7 @@ export function WorkoutTimer() {
     }, [])
 
     const ensureAudioContext = useCallback(() => {
-        const Ctx = window.AudioContext || (window as any).webkitAudioContext
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         if (!audioCtxRef.current) {
             audioCtxRef.current = new Ctx()
         }
