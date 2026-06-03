@@ -31,8 +31,8 @@ export function RenewRoutineDialog({ isOpen, onOpenChange, routineId, currentEnd
       }
       onOpenChange(false)
       window.location.reload()
-    } catch (err: any) {
-      setError(err.message || "Error al renovar la rutina")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al renovar la rutina")
       setIsLoading(false)
     }
   }
@@ -53,8 +53,8 @@ export function RenewRoutineDialog({ isOpen, onOpenChange, routineId, currentEnd
       }
       onOpenChange(false)
       window.location.reload()
-    } catch (err: any) {
-      setError(err.message || "Error al renovar la rutina")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al renovar la rutina")
       setIsLoading(false)
     }
   }

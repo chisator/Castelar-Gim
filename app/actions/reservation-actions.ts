@@ -4,7 +4,7 @@ import { createClient } from "@/lib/server"
 import { revalidatePath } from "next/cache"
 
 // Helper to check and renew credits
-async function checkAndRenewCredits(userId: string, supabase: any) {
+async function checkAndRenewCredits(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
     try {
         const { data: profile, error } = await supabase
             .from('profiles')
@@ -18,9 +18,9 @@ async function checkAndRenewCredits(userId: string, supabase: any) {
         const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
         const currentMonthSixth = new Date(now.getFullYear(), now.getMonth(), 6)
 
-        const updates: any = {}
-        let currentCredits = profile.activity_credits || {}
-        let expiringCredits = profile.expiring_activity_credits || {}
+        const updates: Record<string, unknown> = {}
+        let currentCredits = (profile.activity_credits || {}) as Record<string, number>
+        let expiringCredits = (profile.expiring_activity_credits || {}) as Record<string, number>
 
         // 1. Renewal Logic (1st of Month) -> Move tickets to Expiring
         const lastRenewal = new Date(profile.last_renewal_date || '2000-01-01')
@@ -84,8 +84,8 @@ export async function reserveClass(classId: string, userId: string) {
 
         // Validate tickets for this specific class BEFORE moving forward
         const activityTitle = classData.title;
-        const currentCredits = profile.activity_credits || {};
-        const expiringCredits = profile.expiring_activity_credits || {};
+        const currentCredits = (profile.activity_credits || {}) as Record<string, number>
+        const expiringCredits = (profile.expiring_activity_credits || {}) as Record<string, number>
         
         const c = currentCredits[activityTitle] || 0;
         const e = expiringCredits[activityTitle] || 0;
@@ -243,7 +243,7 @@ export async function cancelReservation(classId: string, userId: string) {
             .single()
 
         if (profile && classData) {
-            const currentCredits = profile.activity_credits || {};
+            const currentCredits = (profile.activity_credits || {}) as Record<string, number>
             const title = classData.title;
             currentCredits[title] = (currentCredits[title] || 0) + 1;
 

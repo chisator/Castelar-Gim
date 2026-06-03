@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChevronRight, ClipboardList, ChevronLeft, Trophy } from "lucide-react"
-import { Logo } from "@/components/logo"
 
 import { LogoutButton } from "@/components/logout-button"
 import { Badge } from "@/components/ui/badge"
+
+interface RoutineAssignment {
+  routine_id: string
+}
 
 export default async function RegistrosPage() {
     const supabase = await createClient()
@@ -32,7 +35,7 @@ export default async function RegistrosPage() {
         .select("routine_id")
         .eq("user_id", user.id)
 
-    const routineIds = routineAssignments?.map((r: any) => r.routine_id) || []
+    const routineIds = (routineAssignments as RoutineAssignment[] || [])?.map((r) => r.routine_id) || []
 
     const { data: routines } = routineIds.length
         ? await supabase
@@ -46,14 +49,14 @@ export default async function RegistrosPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const activeRoutines = routines?.filter((r) => {
+    const activeRoutines = (routines || [])?.filter((r: { end_date?: string; start_date?: string }) => {
         const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
         if (!routineEnd) return false
         routineEnd.setHours(0, 0, 0, 0)
         return routineEnd >= today
     }) || []
 
-    const pastRoutines = routines?.filter((r) => {
+    const pastRoutines = (routines || [])?.filter((r: { end_date?: string; start_date?: string }) => {
         const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
         if (!routineEnd) return false
         routineEnd.setHours(0, 0, 0, 0)
@@ -111,7 +114,7 @@ export default async function RegistrosPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {activeRoutines.map((routine) => (
+                    {activeRoutines.map((routine: { id: string; title: string; description?: string }) => (
                         <Link key={routine.id} href={`/deportista/registros/${routine.id}`}>
                             <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-l-4 border-l-indigo-500">
                                 <CardHeader className="pb-2">
@@ -142,7 +145,7 @@ export default async function RegistrosPage() {
                     <div className="mt-12">
                         <h2 className="text-2xl font-bold mb-6">Rutinas Finalizadas</h2>
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {pastRoutines.map((routine) => (
+                            {pastRoutines.map((routine: { id: string; title: string; description?: string }) => (
                                 <Card key={routine.id} className="h-full opacity-60 bg-muted/30 border-l-4 border-l-gray-400">
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-muted-foreground">

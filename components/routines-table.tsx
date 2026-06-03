@@ -9,12 +9,32 @@ import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+
+interface Routine {
+  id: string
+  title: string
+  trainer_id?: string
+  start_date?: string
+  end_date?: string
+  exercises?: unknown[]
+  routine_user_assignments?: { user_id: string }[]
+}
+
+interface Trainer {
+  id: string
+  full_name?: string
+}
+
+interface User {
+  id: string
+  full_name?: string
+}
 
 interface RoutinesTableProps {
-  routines: any[]
-  trainers: any[]
-  users?: any[]
+  routines: Routine[]
+  trainers: Trainer[]
+  users?: User[]
   totalPages?: number
 }
 
@@ -26,11 +46,11 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
     return trainers.find(t => t.id === trainerId)?.full_name || "N/A"
   }
 
-  const getAssignedUserNames = (routine: any) => {
+  const getAssignedUserNames = (routine: Routine) => {
     if (!routine.routine_user_assignments || routine.routine_user_assignments.length === 0) {
       return "Sin asignar";
     }
-    return routine.routine_user_assignments.map((assignment: any) => {
+    return routine.routine_user_assignments.map((assignment: { user_id: string }) => {
       const user = users.find(u => u.id === assignment.user_id);
       return user ? user.full_name : "Deportista";
     }).join(", ");
@@ -45,18 +65,7 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
   const [localTitleFilter, setLocalTitleFilter] = useState(titleFilter)
   const titleDidMountRef = useRef(false)
 
-  useEffect(() => {
-    if (!titleDidMountRef.current) {
-      titleDidMountRef.current = true
-      return
-    }
-    const timer = setTimeout(() => {
-      updateSearchParam("routinesSearch", localTitleFilter)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [localTitleFilter])
-
-  const updateSearchParam = (key: string, value: string) => {
+  const updateSearchParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value && value !== "all") {
       params.set(key, value)
@@ -67,7 +76,18 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
       params.set("routinesPage", "1")
     }
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  }, [searchParams, pathname, router])
+
+  useEffect(() => {
+    if (!titleDidMountRef.current) {
+      titleDidMountRef.current = true
+      return
+    }
+    const timer = setTimeout(() => {
+      updateSearchParam("routinesSearch", localTitleFilter)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localTitleFilter, updateSearchParam])
 
   const handleDelete = async (routineId: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar esta rutina? Esta acción no se puede deshacer.")) {
@@ -162,13 +182,13 @@ export function RoutinesTable({ routines, trainers, users = [], totalPages = 1 }
               <TableRow key={routine.id}>
                 <TableCell className="font-medium">{routine.title}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{getTrainerName(routine.trainer_id)}</Badge>
+                  <Badge variant="outline">{getTrainerName(routine.trainer_id || "")}</Badge>
                 </TableCell>
                 <TableCell className="max-w-[150px] truncate" title={getAssignedUserNames(routine)}>
                   {getAssignedUserNames(routine)}
                 </TableCell>
-                <TableCell>{new Date(routine.start_date).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}</TableCell>
-                <TableCell>{new Date(routine.end_date).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}</TableCell>
+                <TableCell>{new Date(routine.start_date || "").toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}</TableCell>
+                <TableCell>{new Date(routine.end_date || "").toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}</TableCell>
                 <TableCell>{routine.exercises?.length || 0}</TableCell>
                 <TableCell className="flex gap-2 justify-end">
                   <Button variant="outline" size="sm" asChild>

@@ -142,29 +142,6 @@ export function SplashOverlay() {
     }
   }, [phase, cloneStyle, doFade])
 
-  useEffect(() => {
-    if (phase === "burst") {
-      if (
-        !triggerPathRef.current ||
-        pathname === triggerPathRef.current
-      )
-        return
-
-      const poll = () => {
-        const el = (
-            document.querySelector('[data-splash-target-logo]') ||
-            document.querySelector('[data-splash-target="header"]')
-          ) as HTMLElement | null
-        if (el) {
-          animateShrink(el)
-        } else {
-          pollRafRef.current = requestAnimationFrame(poll)
-        }
-      }
-      pollRafRef.current = requestAnimationFrame(poll)
-    }
-  }, [phase, pathname])
-
   const animateShrink = useCallback(
     (targetEl: HTMLElement) => {
       if (animatingRef.current) return
@@ -214,8 +191,30 @@ export function SplashOverlay() {
         doFade()
       }
     },
-    [doFade]
+    [doFade, cloneStyle.width]
   )
+
+  useEffect(() => {
+    if (phase !== "burst") return
+    if (
+      !triggerPathRef.current ||
+      pathname === triggerPathRef.current
+    )
+      return
+
+    const poll = () => {
+      const el = (
+          document.querySelector('[data-splash-target-logo]') ||
+          document.querySelector('[data-splash-target="header"]')
+        ) as HTMLElement | null
+      if (el) {
+        animateShrink(el)
+      } else {
+        pollRafRef.current = requestAnimationFrame(poll)
+      }
+    }
+    pollRafRef.current = requestAnimationFrame(poll)
+  }, [phase, pathname, animateShrink])
 
   useEffect(() => {
     if (phase !== "growing") return
@@ -303,6 +302,7 @@ export function SplashOverlay() {
           transformOrigin: "center center",
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Layer1000.svg"
           alt="Castelar Gimnasio"

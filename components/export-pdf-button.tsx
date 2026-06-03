@@ -7,7 +7,7 @@ import { useReactToPrint } from "react-to-print"
 
 interface ExportPdfButtonProps {
   athlete: { full_name: string } | null
-  routines: any[]
+  routines: { id: string; title: string; start_date?: string; end_date?: string; description?: string; exercises?: unknown[] }[]
 }
 
 export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
@@ -104,7 +104,7 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {exercises.map((ex: any, eIdx: number) => (
+                        {exercises.filter((ex): ex is { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string } => typeof ex === 'object' && ex !== null && 'name' in ex).map((ex, eIdx: number) => (
                           <tr key={eIdx} className="border-b border-gray-200 bg-white">
                             <td className="p-2 border border-gray-300 font-medium text-black">{ex.name}</td>
                             <td className="p-2 border border-gray-300 text-black">{ex.sets || "-"}</td>

@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/client"
 import { importRoutine } from "@/app/actions/trainer-actions"
 import { getLatestPRForUserAndExercise } from "@/app/actions/pr-actions"
 import { Button } from "@/components/ui/button"
@@ -43,10 +42,22 @@ interface Exercise {
   catalog_id?: string
 }
 
+interface Athlete {
+  id: string
+  full_name: string
+  email?: string
+}
+
+interface Trainer {
+  id: string
+  full_name: string
+  email?: string
+}
+
 interface CreateRoutineFormProps {
-  athletes: any[]
+  athletes: Athlete[]
   creatorId: string
-  trainers?: any[]
+  trainers?: Trainer[]
   isAdmin?: boolean
   exerciseCatalog: ExerciseCatalogItem[]
 }
@@ -214,8 +225,8 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
 
       router.push(isAdmin ? "/admin" : "/entrenador")
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || "Error al crear la rutina")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear la rutina")
     } finally {
       setIsLoading(false)
     }

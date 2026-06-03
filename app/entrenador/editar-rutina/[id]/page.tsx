@@ -51,7 +51,7 @@ export default async function EditRoutinePage({ params }: PageProps) {
     .select("user_id")
     .eq("routine_id", params.id)
 
-  const assignedUserIds = routineAssignments?.map((a: any) => a.user_id) || []
+  const assignedUserIds = (routineAssignments || []).map((a: { user_id: string }) => a.user_id) || []
 
   // Obtener perfiles de deportistas (filtrados por entrenador o todos para admin)
   const { data: athletes } = trainerUserIds.length
@@ -59,10 +59,10 @@ export default async function EditRoutinePage({ params }: PageProps) {
     : { data: [] }
 
   // Obtener todos los entrenadores si el usuario actual es administrador
-  let allTrainers = [] as any[]
+  let allTrainers = [] as { id: string; full_name?: string; email?: string }[]
   if (userRole === "administrador") {
     const { data: trainersData } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("role", "entrenador").order("full_name")
-    allTrainers = trainersData || []
+    allTrainers = (trainersData as { id: string; full_name?: string; email?: string }[]) || []
   }
 
   // Obtener catálogo de ejercicios

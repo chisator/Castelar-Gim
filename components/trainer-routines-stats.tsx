@@ -7,10 +7,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
+interface Routine {
+  id: string
+  trainer_id?: string
+  created_at?: string
+  start_date?: string
+  routine_user_assignments?: { user_id: string }[]
+}
+
+interface Trainer {
+  id: string
+  full_name?: string
+}
+
+interface User {
+  id: string
+  full_name?: string
+}
+
 interface TrainerRoutinesStatsProps {
-    routines: any[]
-    trainers: any[]
-    users?: any[]
+    routines: Routine[]
+    trainers: Trainer[]
+    users?: User[]
 }
 
 export function TrainerRoutinesStats({ routines, trainers, users = [] }: TrainerRoutinesStatsProps) {
@@ -60,7 +78,7 @@ export function TrainerRoutinesStats({ routines, trainers, users = [] }: Trainer
             const rDate = new Date(routineDateValue)
 
             if (routine.routine_user_assignments && routine.routine_user_assignments.length > 0) {
-                routine.routine_user_assignments.forEach((assign: any) => {
+                routine.routine_user_assignments.forEach((assign: { user_id: string }) => {
                     assignments.push({
                         userId: assign.user_id,
                         date: rDate,

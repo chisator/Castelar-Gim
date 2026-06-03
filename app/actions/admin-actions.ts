@@ -119,9 +119,9 @@ export async function createUser(formData: {
     revalidatePath("/entrenador")
 
     return { success: true, user: newUser }
-  } catch (error: any) {
+  } catch (error) {
     console.error("[v0] Unexpected error:", error)
-    return { error: error.message || "Error al crear usuario" }
+    return { error: error instanceof Error ? error.message : "Error al crear usuario" }
   }
 }
 
@@ -140,8 +140,8 @@ export async function assignUserToTrainer(formData: { userId: string; trainerId:
 
     revalidatePath("/admin")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al asignar usuario" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al asignar usuario" }
   }
 }
 
@@ -161,8 +161,8 @@ export async function removeUserFromTrainer(formData: { userId: string; trainerI
 
     revalidatePath("/admin")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al desasignar usuario" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al desasignar usuario" }
   }
 }
 
@@ -192,7 +192,7 @@ export async function updateUser(formData: {
     })
 
     // Actualizar email y metadata del usuario
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       email: formData.email,
       user_metadata: {
         full_name: formData.fullName,
@@ -231,8 +231,8 @@ export async function updateUser(formData: {
 
     revalidatePath("/admin")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al actualizar usuario" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al actualizar usuario" }
   }
 }
 
@@ -311,8 +311,8 @@ export async function deleteUser(userId: string) {
 
     revalidatePath("/admin")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al eliminar usuario" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al eliminar usuario" }
   }
 }
 
@@ -332,8 +332,8 @@ export async function getExerciseCatalog() {
     }
 
     return { success: true, exercises: data || [] }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener ejercicios" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener ejercicios" }
   }
 }
 
@@ -362,8 +362,8 @@ export async function createExerciseCatalogItem(formData: { name: string; video_
 
     revalidatePath("/admin/ejercicios") // Path que crearemos
     return { success: true, exercise: data }
-  } catch (error: any) {
-    return { error: error.message || "Error al crear ejercicio" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al crear ejercicio" }
   }
 }
 
@@ -385,8 +385,8 @@ export async function updateExerciseCatalogItem(formData: { id: string; name: st
 
     revalidatePath("/admin/ejercicios")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al actualizar ejercicio" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al actualizar ejercicio" }
   }
 }
 
@@ -405,8 +405,8 @@ export async function deleteExerciseCatalogItem(id: string) {
 
     revalidatePath("/admin/ejercicios")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al eliminar ejercicio" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al eliminar ejercicio" }
   }
 }
 
@@ -438,8 +438,8 @@ export async function getAdminEvents() {
     }
 
     return { success: true, events: data || [] }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener eventos" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener eventos" }
   }
 }
 
@@ -495,8 +495,8 @@ export async function getAttendees(classId: string) {
 
     console.log("getAttendees success. Data:", attendees)
     return { success: true, attendees }
-  } catch (error: any) {
+  } catch (error) {
     console.log("getAttendees caught error:", error)
-    return { error: error.message || "Error al obtener asistentes" }
+    return { error: error instanceof Error ? error.message : "Error al obtener asistentes" }
   }
 }

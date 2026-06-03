@@ -3,6 +3,24 @@
 import { createClient as createServerClient } from "@/lib/server"
 import { revalidatePath } from "next/cache"
 
+interface WorkoutLogEntry {
+  id: string
+  workout_log_id: string
+  exercise_name: string
+  sets_data: { weight: string; reps: string }[]
+  notes: string | null
+  order: number
+}
+
+interface WorkoutLog {
+  id: string
+  user_id: string
+  routine_id: string
+  date: string
+  notes?: string
+  entries?: WorkoutLogEntry[]
+}
+
 export async function getWorkoutLogs(routineId: string) {
     const supabase = await createServerClient()
     const {
@@ -23,9 +41,9 @@ export async function getWorkoutLogs(routineId: string) {
 
         if (error) throw error
 
-        return { data }
-    } catch (error: any) {
-        return { error: error.message }
+        return { data: data as WorkoutLog[] }
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) }
     }
 }
 
@@ -54,12 +72,12 @@ export async function getWorkoutLog(logId: string) {
 
         // Ordenar entradas por el campo 'order'
         if (data && data.entries) {
-            data.entries.sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+            data.entries.sort((a: { order?: number }, b: { order?: number }) => (a.order || 0) - (b.order || 0))
         }
 
-        return { data }
-    } catch (error: any) {
-        return { error: error.message }
+        return { data: data as WorkoutLog }
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) }
     }
 }
 
@@ -69,7 +87,7 @@ export async function createWorkoutLog(data: {
     notes?: string
     entries: {
         exercise_name: string
-        sets_data: any[]
+        sets_data: { weight: string; reps: string }[]
         notes?: string
         order: number
     }[]
@@ -118,8 +136,8 @@ export async function createWorkoutLog(data: {
 
         revalidatePath(`/deportista/registros/${data.routineId}`)
         return { success: true, logId: log.id }
-    } catch (error: any) {
-        return { error: error.message }
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) }
     }
 }
 
@@ -131,7 +149,7 @@ export async function updateWorkoutLog(
         entries?: {
             id?: string // Si tiene ID, actualizamos. Si no, creamos.
             exercise_name: string
-            sets_data: any[]
+            sets_data: { weight: string; reps: string }[]
             notes?: string
             order: number
         }[]
@@ -197,7 +215,7 @@ export async function updateWorkoutLog(
         // Better validation path handling might be needed depending on where we redirect
 
         return { success: true }
-    } catch (error: any) {
-        return { error: error.message }
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) }
     }
 }

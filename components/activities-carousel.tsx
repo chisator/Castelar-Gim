@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format, startOfWeek, endOfWeek, addDays, isPast } from "date-fns"
@@ -53,19 +53,7 @@ export function ActivitiesCarousel() {
     const [userId, setUserId] = useState<string | null>(null)
     const supabase = createClient()
 
-    useEffect(() => {
-        fetchEvents()
-    }, [])
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('syncTickets', { 
-                detail: { activityCredits, expiringCredits } 
-            }))
-        }
-    }, [activityCredits, expiringCredits])
-
-    const fetchEvents = async () => {
+    const fetchEvents = useCallback(async () => {
         setIsLoading(true)
         try {
             const now = new Date()
@@ -154,8 +142,8 @@ export function ActivitiesCarousel() {
                 setUserId(user.id)
                 const { data: profile } = await supabase.from('profiles').select('activity_credits, expiring_activity_credits').eq('id', user.id).single()
                 if (profile) {
-                    setActivityCredits(profile.activity_credits || {})
-                    setExpiringCredits(profile.expiring_activity_credits || {})
+                    setActivityCredits((profile.activity_credits as Record<string, number>) || {})
+                    setExpiringCredits((profile.expiring_activity_credits as Record<string, number>) || {})
                 }
 
                 const { data: reservations } = await supabase.from('reservations').select('class_id').eq('user_id', user.id)
@@ -167,7 +155,19 @@ export function ActivitiesCarousel() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [supabase])
+
+    useEffect(() => {
+        fetchEvents()
+    }, [fetchEvents])
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('syncTickets', { 
+                detail: { activityCredits, expiringCredits } 
+            }))
+        }
+    }, [activityCredits, expiringCredits])
 
     const handleReserve = async (classId: string, activityTitle: string, classTime: string) => {
         if (!userId) return

@@ -11,13 +11,35 @@ import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
 import { ExportImportDialog } from "@/components/export-import-dialog"
 
-interface TrainerRoutineCardProps {
-  routine: any
-  isPast?: boolean
+interface Exercise {
+  name: string
+  sets?: string
+  reps?: string
+  weight?: string
+  duration?: string
+  notes?: string
+  video_url?: string
+}
+
+interface Routine {
+  id: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  exercises?: unknown[]
+  sports?: { name?: string }
+  creator_name?: string
+  updater_name?: string | null
+  updated_at?: string
+}
+
+function isExercise(value: unknown): value is Exercise {
+  return typeof value === 'object' && value !== null && 'name' in value
 }
 
 // Helper component for individual exercise items with video toggle
-function ExerciseItem({ exercise }: { exercise: any }) {
+function ExerciseItem({ exercise }: { exercise: Exercise }) {
   const [showVideo, setShowVideo] = useState(false)
 
   const getYouTubeId = (url: string) => {
@@ -27,7 +49,7 @@ function ExerciseItem({ exercise }: { exercise: any }) {
     return (match && match[2].length === 11) ? match[2] : null
   }
 
-  const videoId = getYouTubeId(exercise.video_url)
+  const videoId = getYouTubeId(exercise.video_url || "")
 
   return (
     <li className="text-sm bg-muted p-3 rounded-md">
@@ -72,14 +94,12 @@ function ExerciseItem({ exercise }: { exercise: any }) {
 }
 
 interface TrainerRoutineCardProps {
-  routine: any
+  routine: Routine
   isPast?: boolean
   index?: number
 }
 
-// ... (ExerciseItem remains same)
-
-export function TrainerRoutineCard({ routine, isPast = false, index = 0 }: TrainerRoutineCardProps) {
+export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCardProps) {
   // ... (hooks remain same)
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -252,7 +272,7 @@ export function TrainerRoutineCard({ routine, isPast = false, index = 0 }: Train
                   <h4 className="font-semibold mb-2 text-sm">Ejercicios</h4>
                   {exercises.length > 0 ? (
                     <ul className="space-y-3">
-                      {exercises.map((exercise: any, index: number) => (
+                      {exercises.filter(isExercise).map((exercise, index) => (
                         <ExerciseItem key={index} exercise={exercise} />
                       ))}
                     </ul>
