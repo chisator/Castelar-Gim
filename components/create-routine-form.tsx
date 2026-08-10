@@ -40,6 +40,8 @@ interface Exercise {
   notes?: string
   video_url?: string
   catalog_id?: string
+  metric_type?: "reps" | "time"
+  time_unit?: "seconds" | "minutes"
 }
 
 interface Athlete {
@@ -80,12 +82,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([""])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "" }])
+  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds" }])
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds" }])
   }
 
   const removeExercise = (index: number) => {
@@ -95,6 +97,22 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const updateExercise = (index: number, field: keyof Exercise, value: string) => {
     const newExercises = [...exercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
+    setExercises(newExercises)
+  }
+
+  const toggleMetricType = (index: number) => {
+    const newExercises = [...exercises]
+    const current = newExercises[index]
+    const newType = current.metric_type === "time" ? "reps" : "time"
+    newExercises[index] = { ...current, metric_type: newType }
+    setExercises(newExercises)
+  }
+
+  const toggleTimeUnit = (index: number) => {
+    const newExercises = [...exercises]
+    const current = newExercises[index]
+    const newUnit = current.time_unit === "minutes" ? "seconds" : "minutes"
+    newExercises[index] = { ...current, time_unit: newUnit }
     setExercises(newExercises)
   }
 
@@ -407,13 +425,75 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor={`exercise-reps-${index}`}>Repeticiones</Label>
-                    <SmartNumberInput
-                      value={exercise.reps || ""}
-                      onChange={(val) => updateExercise(index, "reps", val)}
-                      placeholder="Ej: 10"
-                      suggestions={[8, 10, 12, 15]}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`exercise-reps-${index}`}>
+                        {exercise.metric_type === "time" ? "Tiempo" : "Repeticiones"}
+                      </Label>
+                      <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleMetricType(index)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                            exercise.metric_type !== "time"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Repeticiones
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleMetricType(index)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                            exercise.metric_type === "time"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Tiempo
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <SmartNumberInput
+                          value={exercise.reps || ""}
+                          onChange={(val) => updateExercise(index, "reps", val)}
+                          placeholder={exercise.metric_type === "time" ? "Ej: 40" : "Ej: 10"}
+                          suggestions={exercise.metric_type === "time" ? [30, 40, 60, 90] : [8, 10, 12, 15]}
+                        />
+                      </div>
+                      {exercise.metric_type === "time" && (
+                        <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 self-start">
+                          <button
+                            type="button"
+                            onClick={() => toggleTimeUnit(index)}
+                            className={cn(
+                              "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                              exercise.time_unit !== "minutes"
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            seg (″)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleTimeUnit(index)}
+                            className={cn(
+                              "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                              exercise.time_unit === "minutes"
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            min (′)
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
