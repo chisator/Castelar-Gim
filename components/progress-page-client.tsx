@@ -13,7 +13,7 @@ interface ProgressPageClientProps {
 
 export function ProgressPageClient({ exercises }: ProgressPageClientProps) {
     const [selectedExercise, setSelectedExercise] = useState<string>("")
-    const [chartData, setChartData] = useState<{ date: string; weight: number; oneRM: number; volume: number }[]>([])
+    const [chartData, setChartData] = useState<{ date: string; weight: number; oneRM: number; volume: number; totalTime: number; isTimeBased: boolean }[]>([])
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {

@@ -8,7 +8,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 interface ProgressChartProps {
-    data: { date: string; weight: number; oneRM: number; volume: number }[]
+    data: { date: string; weight: number; oneRM: number; volume: number; totalTime: number; isTimeBased: boolean }[]
     exerciseName: string
 }
 
@@ -21,8 +21,14 @@ const formatNumber = (num: number) => {
 }
 
 export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
-    const [metric, setMetric] = useState<"strength" | "volume">("strength")
+    const isTimeBased = data?.some(item => item.isTimeBased) || false
+    const [metric, setMetric] = useState<"strength" | "volume" | "time">("strength")
     const [timeRange, setTimeRange] = useState<"30d" | "1y" | "all">("all")
+
+    // If time-based exercise, default to "time" metric
+    useState(() => {
+        if (isTimeBased) setMetric("time")
+    })
 
     const filteredData = data?.filter(item => {
         if (timeRange === "all") return true
@@ -49,10 +55,17 @@ export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-normal">Progreso: <span className="font-bold">{exerciseName}</span></CardTitle>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Tabs value={metric} onValueChange={(v) => setMetric(v as "strength" | "volume")} className="w-full sm:w-[200px]">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="strength">Fuerza</TabsTrigger>
-                            <TabsTrigger value="volume">Volumen</TabsTrigger>
+                    <Tabs value={metric} onValueChange={(v) => setMetric(v as "strength" | "volume" | "time")} className="w-full sm:w-[200px]">
+                        <TabsList className={`grid w-full ${isTimeBased ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {!isTimeBased && (
+                                <>
+                                    <TabsTrigger value="strength">Fuerza</TabsTrigger>
+                                    <TabsTrigger value="volume">Volumen</TabsTrigger>
+                                </>
+                            )}
+                            {isTimeBased && (
+                                <TabsTrigger value="time">Tiempo</TabsTrigger>
+                            )}
                         </TabsList>
                     </Tabs>
                     <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as "30d" | "1y" | "all")} className="w-full sm:w-auto">
@@ -133,7 +146,7 @@ export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
                                     activeDot={{ r: 7 }}
                                 />
                             </LineChart>
-                        ) : (
+                        ) : metric === "volume" ? (
                             <AreaChart data={filteredData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
@@ -192,13 +205,74 @@ export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
                                     strokeWidth={3}
                                 />
                             </AreaChart>
+                        ) : (
+                            <AreaChart data={filteredData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorTime" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis
+                                    dataKey="date"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={10}
+                                    tickFormatter={(value) => format(new Date(value), "d MMM", { locale: es })}
+                                    style={{ fontSize: '12px', fill: '#6B7280' }}
+                                />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={10}
+                                    style={{ fontSize: '12px', fontWeight: 'bold' }}
+                                    width={60}
+                                    tickFormatter={formatNumber}
+                                />
+                                <Tooltip
+                                    cursor={{ stroke: '#f59e0b', strokeWidth: 2 }}
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            return (
+                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                    <div className="mb-2 border-b pb-1">
+                                                        <span className="font-semibold">
+                                                            {format(new Date(label), "d MMMM yyyy", { locale: es })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                                        <span className="text-sm text-muted-foreground">Tiempo Total:</span>
+                                                        <span className="font-bold">
+                                                            {payload[0].value} seg
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="totalTime"
+                                    name="Tiempo Total"
+                                    stroke="#f59e0b"
+                                    fillOpacity={1}
+                                    fill="url(#colorTime)"
+                                    strokeWidth={3}
+                                />
+                            </AreaChart>
                         )}
                     </ResponsiveContainer>
                 </div>
                 <div className="mt-4 text-xs text-muted-foreground text-center">
                     {metric === "strength"
                         ? "1RM = Estimación de peso máximo para 1 repetición (Fórmula Brzycki)"
-                        : "Volumen = Peso × Repeticiones × Series (Carga total de trabajo)"}
+                        : metric === "volume"
+                        ? "Volumen = Peso × Repeticiones × Series (Carga total de trabajo)"
+                        : "Tiempo Total = Suma de tiempo de todas las series (en segundos)"}
                 </div>
             </CardContent>
         </Card>
