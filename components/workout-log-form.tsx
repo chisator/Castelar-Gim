@@ -28,6 +28,8 @@ interface LogEntry {
 
 interface RoutineExercise {
     name: string
+    metric_type?: "reps" | "time"
+    time_unit?: "seconds" | "minutes"
 }
 
 interface ExistingLogEntry {
@@ -72,7 +74,10 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
             // New log: map from routine exercises
             return initialExercises.map((ex, index) => ({
                 exercise_name: ex.name,
-                sets_data: [{ weight: "", reps: "" }], // Start with 1 empty set
+                sets_data: [{
+                    weight: "",
+                    ...(ex.metric_type === "time" ? { time: "", metric_type: "time" } : { reps: "" })
+                }], // Start with 1 empty set
                 notes: "",
                 order: index
             }))
@@ -89,10 +94,16 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
         const newEntries = [...entries]
         const previousSet = newEntries[entryIndex].sets_data[newEntries[entryIndex].sets_data.length - 1]
         // Copy values from previous set for convenience
-        newEntries[entryIndex].sets_data.push({
+        const newSet: SetData = {
             weight: previousSet?.weight || "",
-            reps: previousSet?.reps || ""
-        })
+        }
+        if (previousSet?.metric_type === "time") {
+            newSet.time = previousSet?.time || ""
+            newSet.metric_type = "time"
+        } else {
+            newSet.reps = previousSet?.reps || ""
+        }
+        newEntries[entryIndex].sets_data.push(newSet)
         setEntries(newEntries)
     }
 
@@ -186,7 +197,9 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
                                 <div className="grid grid-cols-10 gap-2 mb-2 text-xs font-medium text-muted-foreground text-center">
                                     <div className="col-span-1">#</div>
                                     <div className="col-span-4">Peso (kg)</div>
-                                    <div className="col-span-4">Reps</div>
+                                    <div className="col-span-4">
+                                        {entry.sets_data[0]?.metric_type === "time" ? "Tiempo" : "Reps"}
+                                    </div>
                                     <div className="col-span-1"></div>
                                 </div>
                                 {entry.sets_data.map((set, setIndex) => (
@@ -204,13 +217,28 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
                                             />
                                         </div>
                                         <div className="col-span-4">
-                                            <Input
-                                                type="number"
-                                                placeholder="0"
-                                                value={set.reps}
-                                                onChange={(e) => updateSet(index, setIndex, "reps", e.target.value)}
-                                                className="text-center h-9"
-                                            />
+                                            {entry.sets_data[0]?.metric_type === "time" ? (
+                                                <div className="flex gap-1">
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="0"
+                                                        value={set.time || ""}
+                                                        onChange={(e) => updateSet(index, setIndex, "time", e.target.value)}
+                                                        className="text-center h-9 flex-1"
+                                                    />
+                                                    <span className="text-xs text-muted-foreground self-center">
+                                                        {initialExercises.find(ex => ex.name === entry.exercise_name)?.time_unit === "minutes" ? "'" : "\""}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    value={set.reps || ""}
+                                                    onChange={(e) => updateSet(index, setIndex, "reps", e.target.value)}
+                                                    className="text-center h-9"
+                                                />
+                                            )}
                                         </div>
                                         <div className="col-span-1 flex justify-center">
                                             <Button
