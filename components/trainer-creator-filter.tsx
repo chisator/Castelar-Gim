@@ -20,25 +20,25 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface TrainerUserFilterProps {
-    athletes: {
+interface TrainerCreatorFilterProps {
+    trainers: {
         id: string
         full_name: string
     }[]
 }
 
-export function TrainerUserFilter({ athletes }: TrainerUserFilterProps) {
+export function TrainerCreatorFilter({ trainers }: TrainerCreatorFilterProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const currentUserId = searchParams.get("userId") || ""
+    const currentCreatedBy = searchParams.get("createdBy") || ""
 
     const [open, setOpen] = React.useState(false)
-    const [value, setValue] = React.useState(currentUserId)
+    const [value, setValue] = React.useState(currentCreatedBy)
 
-    // Sort athletes alphabetically
-    const sortedAthletes = React.useMemo(() => {
-        return [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
-    }, [athletes])
+    // Sort trainers alphabetically
+    const sortedTrainers = React.useMemo(() => {
+        return [...trainers].sort((a, b) => a.full_name.localeCompare(b.full_name))
+    }, [trainers])
 
     const onSelect = (currentValue: string) => {
         const newValue = currentValue === value ? "" : currentValue
@@ -47,15 +47,9 @@ export function TrainerUserFilter({ athletes }: TrainerUserFilterProps) {
 
         const params = new URLSearchParams(searchParams.toString())
         if (newValue) {
-            params.set("userId", newValue)
+            params.set("createdBy", newValue)
         } else {
-            params.delete("userId")
-        }
-
-        // Preserve createdBy filter if it exists
-        const currentCreatedBy = searchParams.get("createdBy")
-        if (currentCreatedBy) {
-            params.set("createdBy", currentCreatedBy)
+            params.delete("createdBy")
         }
 
         router.push(`/entrenador?${params.toString()}`)
@@ -63,7 +57,7 @@ export function TrainerUserFilter({ athletes }: TrainerUserFilterProps) {
 
     return (
         <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Filtrar por usuario:</span>
+            <span className="text-sm font-medium">Creado por:</span>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button
@@ -74,19 +68,19 @@ export function TrainerUserFilter({ athletes }: TrainerUserFilterProps) {
                         type="button"
                     >
                         {value
-                            ? sortedAthletes.find((athlete) => athlete.id === value)?.full_name
-                            : "Todos los usuarios"}
+                            ? sortedTrainers.find((trainer) => trainer.id === value)?.full_name
+                            : "Todos los entrenadores"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[250px] p-0">
                     <Command>
-                        <CommandInput placeholder="Buscar usuario..." />
+                        <CommandInput placeholder="Buscar entrenador..." />
                         <CommandList>
-                            <CommandEmpty>No se encontró usuario.</CommandEmpty>
+                            <CommandEmpty>No se encontró entrenador.</CommandEmpty>
                             <CommandGroup>
                                 <CommandItem
-                                    value="todos" // Special value for "All"
+                                    value="todos"
                                     onSelect={() => onSelect("")}
                                 >
                                     <Check
@@ -95,21 +89,21 @@ export function TrainerUserFilter({ athletes }: TrainerUserFilterProps) {
                                             value === "" ? "opacity-100" : "opacity-0"
                                         )}
                                     />
-                                    Todos los usuarios
+                                    Todos los entrenadores
                                 </CommandItem>
-                                {sortedAthletes.map((athlete) => (
+                                {sortedTrainers.map((trainer) => (
                                     <CommandItem
-                                        key={athlete.id}
-                                        value={athlete.full_name.toLowerCase()} // Ensure lowercase for cmdk
-                                        onSelect={() => onSelect(athlete.id)}
+                                        key={trainer.id}
+                                        value={trainer.full_name.toLowerCase()}
+                                        onSelect={() => onSelect(trainer.id)}
                                     >
                                         <Check
                                             className={cn(
                                                 "mr-2 h-4 w-4",
-                                                value === athlete.id ? "opacity-100" : "opacity-0"
+                                                value === trainer.id ? "opacity-100" : "opacity-0"
                                             )}
                                         />
-                                        {athlete.full_name}
+                                        {trainer.full_name}
                                     </CommandItem>
                                 ))}
                             </CommandGroup>

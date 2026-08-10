@@ -8,13 +8,14 @@ import { LogoutButton } from "@/components/logout-button"
 import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
 import { TrainerUserFilter } from "@/components/trainer-user-filter"
+import { TrainerCreatorFilter } from "@/components/trainer-creator-filter"
 import { Logo } from "@/components/logo"
 import { ExportPdfButton } from "@/components/export-pdf-button"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 
 
 
-export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string } }) {
+export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string; createdBy?: string } }) {
   const supabase = await createClient()
 
   const {
@@ -53,13 +54,41 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
     .eq("role", "deportista")
     .order("full_name")
 
-  // Si hay filtro por usuario en querystring, obtener TODAS las rutinas asignadas a ese usuario sin filtrar por creador
+  // Obtener TODOS los entrenadores para el filtro "Creado por"
+  const { data: allTrainers } = await supabaseAdmin
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "entrenador")
+    .order("full_name")
+
+  // Construir la consulta de rutinas según los filtros activos
   let routines = [] as any[]
-  if (searchParams?.userId) {
+  const userIdFilter = searchParams?.userId
+  const createdByFilter = searchParams?.createdBy
+
+  if (userIdFilter && createdByFilter) {
+    // Ambos filtros: rutinas del deportista creadas por el entrenador seleccionado
     const { data: routineAssignments } = await supabaseAdmin
       .from("routine_user_assignments")
       .select("routine_id")
-      .eq("user_id", searchParams.userId)
+      .eq("user_id", userIdFilter)
+
+    const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
+    if (routineIds.length > 0) {
+      const { data } = await supabaseAdmin
+        .from("routines")
+        .select("*")
+        .in("id", routineIds)
+        .eq("trainer_id", createdByFilter)
+        .order("end_date", { ascending: false })
+      routines = data || []
+    }
+  } else if (userIdFilter) {
+    // Solo filtro de usuario: todas las rutinas asignadas a ese deportista
+    const { data: routineAssignments } = await supabaseAdmin
+      .from("routine_user_assignments")
+      .select("routine_id")
+      .eq("user_id", userIdFilter)
       .order("created_at", { ascending: false })
 
     const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
@@ -70,18 +99,24 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
         .in("id", routineIds)
         .order("end_date", { ascending: false })
       routines = data || []
-    } else {
-      routines = []
     }
+  } else if (createdByFilter) {
+    // Solo filtro de creador: todas las rutinas de ese entrenador
+    const { data } = await supabaseAdmin
+      .from("routines")
+      .select("*")
+      .eq("trainer_id", createdByFilter)
+      .order("end_date", { ascending: false })
+    routines = data || []
   } else {
-    // Si no hay filtro, mostrar todas las rutinas asignadas a sus alumnos asignados OR creadas por este entrenador
-    const { data: assignedRoutinesQuery } = assignedUserIds.length > 0 
-      ? await supabaseAdmin.from("routine_user_assignments").select("routine_id").in("user_id", assignedUserIds) 
+    // Sin filtros: rutinas asignadas a sus alumnos OR creadas por este entrenador
+    const { data: assignedRoutinesQuery } = assignedUserIds.length > 0
+      ? await supabaseAdmin.from("routine_user_assignments").select("routine_id").in("user_id", assignedUserIds)
       : { data: [] }
     const routineIds = (assignedRoutinesQuery || []).map((r: any) => r.routine_id)
-    
+
     let query = supabaseAdmin.from("routines").select("*").order("end_date", { ascending: false })
-    
+
     if (routineIds.length > 0) {
       query = query.or(`id.in.(${routineIds.join(',')}),trainer_id.eq.${user.id}`)
     } else {
@@ -130,9 +165,35 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       return routineEnd < today
     }) || []
 
-  const selectedAthlete = searchParams?.userId 
+  const selectedAthlete = searchParams?.userId
     ? athletes?.find(a => a.id === searchParams.userId) || null
-    : null;
+    : null
+
+  const selectedTrainer = searchParams?.createdBy
+    ? allTrainers?.find(t => t.id === searchParams.createdBy) || null
+    : null
+
+  // Textos dinámicos para mensajes vacíos según filtros
+  const getEmptyMessage = (type: "upcoming" | "past") => {
+    if (selectedAthlete && selectedTrainer) {
+      return type === "upcoming"
+        ? `No hay rutinas próximas de ${selectedAthlete.full_name} creadas por ${selectedTrainer.full_name}`
+        : `No hay rutinas anteriores de ${selectedAthlete.full_name} creadas por ${selectedTrainer.full_name}`
+    }
+    if (selectedAthlete) {
+      return type === "upcoming"
+        ? `No hay rutinas próximas de ${selectedAthlete.full_name}`
+        : `No hay rutinas anteriores de ${selectedAthlete.full_name}`
+    }
+    if (selectedTrainer) {
+      return type === "upcoming"
+        ? `No hay rutinas próximas de ${selectedTrainer.full_name}`
+        : `No hay rutinas anteriores de ${selectedTrainer.full_name}`
+    }
+    return type === "upcoming"
+      ? "No tienes rutinas próximas programadas"
+      : "No tienes rutinas anteriores"
+  }
 
   return (
     <div className="w-full">
@@ -196,6 +257,9 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
           <div className="flex-1">
             <TrainerUserFilter athletes={athletes || []} />
           </div>
+          <div className="flex-1">
+            <TrainerCreatorFilter trainers={allTrainers || []} />
+          </div>
           {searchParams?.userId && selectedAthlete && routines.length > 0 && (
             <ExportPdfButton athlete={selectedAthlete} routines={routines} />
           )}
@@ -248,8 +312,8 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
               </svg>
             </CardHeader>
             <CardContent className="p-2 pt-0">
-              <div className="text-lg sm:text-xl font-bold">{totalAssignedUsers}</div>
-              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Usuarios asignados</p>
+              <div className="text-lg sm:text-xl font-bold">{selectedTrainer ? "—" : totalAssignedUsers}</div>
+              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{selectedTrainer ? "Filtro activo" : "Usuarios asignados"}</p>
             </CardContent>
           </Card>
         </div>
@@ -266,10 +330,12 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             ) : (
               <Card>
                 <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground mb-4">No tienes rutinas próximas programadas</p>
-                  <Button asChild>
-                    <Link href="/entrenador/crear-rutina">Crear Primera Rutina</Link>
-                  </Button>
+                  <p className="text-muted-foreground mb-4">{getEmptyMessage("upcoming")}</p>
+                  {!selectedTrainer && !selectedAthlete && (
+                    <Button asChild>
+                      <Link href="/entrenador/crear-rutina">Crear Primera Rutina</Link>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -286,7 +352,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             ) : (
               <Card>
                 <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">No tienes rutinas anteriores</p>
+                  <p className="text-muted-foreground">{getEmptyMessage("past")}</p>
                 </CardContent>
               </Card>
             )}

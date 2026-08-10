@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
@@ -25,18 +26,18 @@ export default async function CrearRutinaPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener usuarios asignados al entrenador
-  const { data: assignments } = await supabase
-    .from("trainer_user_assignments")
-    .select("user_id")
-    .eq("trainer_id", user.id)
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
 
-  const userIds = assignments?.map((a) => a.user_id) || []
-
-  // Obtener perfiles de esos usuarios
-  const { data: athletes } = userIds.length
-    ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
-    : { data: [] }
+  // Obtener TODOS los perfiles de deportistas
+  const { data: athletes } = await supabaseAdmin
+    .from("profiles")
+    .select("*")
+    .eq("role", "deportista")
+    .order("full_name")
 
   const { exercises: exerciseCatalog } = await getExerciseCatalog()
 

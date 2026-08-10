@@ -103,14 +103,7 @@ export async function deleteRoutine(routineId: string) {
       return { error: "No tienes permisos para eliminar rutinas" }
     }
 
-    let query = supabase.from("routines").delete().eq("id", routineId)
-
-    // If not admin, restrict deletion to their own routines
-    if (userRole !== "administrador") {
-      query = query.eq("trainer_id", user.id)
-    }
-
-    const { error } = await query
+    const { error } = await supabase.from("routines").delete().eq("id", routineId)
 
     if (error) {
       return { error: error.message }
@@ -143,16 +136,15 @@ export async function renewRoutine({
       return { error: "No tienes permisos para renovar la rutina" }
     }
 
-    // Obtener rutina para validar propietario y fecha actual
+    // Obtener rutina para validar existencia y fecha actual
     const { data: routine, error: getErr } = await supabase
       .from("routines")
       .select("id, trainer_id, start_date, end_date")
       .eq("id", routineId)
-      .eq("trainer_id", user.id)
       .single()
 
     if (getErr || !routine) {
-      return { error: getErr?.message || "Rutina no encontrada o sin permisos" }
+      return { error: getErr?.message || "Rutina no encontrada" }
     }
 
     let newEnd: Date | null = null
@@ -178,7 +170,6 @@ export async function renewRoutine({
       .from("routines")
       .update({ end_date: newEnd.toISOString() })
       .eq("id", routineId)
-      .eq("trainer_id", user.id)
 
     if (updateErr) {
       return { error: updateErr.message }
@@ -207,11 +198,10 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
       .from("routines")
       .select("*")
       .eq("id", routineId)
-      .eq("trainer_id", user.id)
       .single()
 
     if (routineErr || !routine) {
-      return { error: "Rutina no encontrada o sin permisos" }
+      return { error: "Rutina no encontrada" }
     }
 
     const exercises = routine.exercises || []
