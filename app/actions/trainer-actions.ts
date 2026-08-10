@@ -14,6 +14,15 @@ interface Exercise {
   video_url?: string
 }
 
+function normalizeToNoonUTC(dateStr: string): string | null {
+  if (!dateStr) return null
+  const datePart = dateStr.toString().split("T")[0]
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return null
+  const d = new Date(`${datePart}T12:00:00Z`)
+  if (isNaN(d.getTime())) return null
+  return d.toISOString()
+}
+
 export async function updateRoutine(formData: {
   routineId: string
   title: string
@@ -53,15 +62,8 @@ export async function updateRoutine(formData: {
       updated_at: new Date().toISOString(),
     }
 
-    const normalizeDate = (d: string) => {
-      if (!d) return null
-      // Ensure we only have YYYY-MM-DD element
-      const datePart = d.toString().split("T")[0]
-      return new Date(`${datePart}T12:00:00Z`).toISOString()
-    }
-
-    if (formData.startDate) updatePayload.start_date = normalizeDate(formData.startDate)
-    if (formData.endDate) updatePayload.end_date = normalizeDate(formData.endDate)
+    if (formData.startDate) updatePayload.start_date = normalizeToNoonUTC(formData.startDate)
+    if (formData.endDate) updatePayload.end_date = normalizeToNoonUTC(formData.endDate)
     // If admin is updating, they can change the trainer_id
     if (userRole === 'administrador' && formData.trainerId) {
       updatePayload.trainer_id = formData.trainerId
@@ -113,7 +115,23 @@ export async function deleteRoutine(routineId: string) {
       return { error: "No tienes permisos para eliminar rutinas" }
     }
 
-    const { error } = await supabase.from("routines").delete().eq("id", routineId)
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
+    // Limpiar asignaciones de usuarios antes de borrar la rutina
+    const { error: delAssignmentsError } = await supabaseAdmin
+      .from("routine_user_assignments")
+      .delete()
+      .eq("routine_id", routineId)
+
+    if (delAssignmentsError) {
+      return { error: delAssignmentsError.message }
+    }
+
+    const { error } = await supabaseAdmin.from("routines").delete().eq("id", routineId)
 
     if (error) {
       return { error: error.message }
@@ -142,12 +160,21 @@ export async function renewRoutine({
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
+    const userRole = user?.user_metadata?.role
+
+    // Allow both trainers and admins
+    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
       return { error: "No tienes permisos para renovar la rutina" }
     }
 
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
     // Obtener rutina para validar existencia y fecha actual
-    const { data: routine, error: getErr } = await supabase
+    const { data: routine, error: getErr } = await supabaseAdmin
       .from("routines")
       .select("id, trainer_id, start_date, end_date")
       .eq("id", routineId)
@@ -160,25 +187,29 @@ export async function renewRoutine({
     let newEnd: Date | null = null
 
     if (newEndDate) {
-      // Ensure specific date is set to Noon UTC
-      newEnd = new Date(`${newEndDate.toString().split("T")[0]}T12:00:00Z`)
+      const normalized = normalizeToNoonUTC(newEndDate)
+      if (!normalized) {
+        return { error: "Fecha de fin inválida" }
+      }
+      newEnd = new Date(normalized)
     } else if (months && months > 0) {
-      // Baseamos la extensión en la fecha de fin actual si existe, o en hoy
       const base = routine.end_date ? new Date(routine.end_date) : new Date()
-      // Si la fecha base ya pasó, empezamos desde hoy
       const now = new Date()
       const from = base < now ? now : base
       newEnd = new Date(from)
       newEnd.setMonth(newEnd.getMonth() + months)
-      // Force calculated date to Noon UTC to match standard
       newEnd.setUTCHours(12, 0, 0, 0)
     } else {
       return { error: "Indica meses a extender o una nueva fecha de fin" }
     }
 
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await supabaseAdmin
       .from("routines")
-      .update({ end_date: newEnd.toISOString() })
+      .update({
+        end_date: newEnd.toISOString(),
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", routineId)
 
     if (updateErr) {
@@ -186,6 +217,7 @@ export async function renewRoutine({
     }
 
     revalidatePath("/entrenador")
+    revalidatePath("/admin")
     return { success: true }
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al renovar rutina" }
@@ -199,12 +231,21 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
+    const userRole = user?.user_metadata?.role
+
+    // Allow both trainers and admins
+    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
       return { error: "No tienes permisos para exportar rutinas" }
     }
 
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
     // Obtener rutina
-    const { data: routine, error: routineErr } = await supabase
+    const { data: routine, error: routineErr } = await supabaseAdmin
       .from("routines")
       .select("*")
       .eq("id", routineId)
@@ -262,6 +303,12 @@ export async function importRoutine(formData: {
       return { error: "No tienes permisos para importar rutinas" }
     }
 
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
     // Determine the trainer_id for the new routine
     // If admin is creating, trainerId must be provided.
     // If trainer is creating, it's their own user.id.
@@ -271,14 +318,14 @@ export async function importRoutine(formData: {
     }
 
     // Crear rutina
-    const { data: inserted, error: insertErr } = await supabase
+    const { data: inserted, error: insertErr } = await supabaseAdmin
       .from("routines")
       .insert({
         title: formData.title,
         description: formData.description,
         trainer_id: trainer_id,
-        start_date: formData.start_date ? new Date(`${formData.start_date.toString().split("T")[0]}T12:00:00Z`).toISOString() : null,
-        end_date: formData.end_date ? new Date(`${formData.end_date.toString().split("T")[0]}T12:00:00Z`).toISOString() : null,
+        start_date: formData.start_date ? normalizeToNoonUTC(formData.start_date) : null,
+        end_date: formData.end_date ? normalizeToNoonUTC(formData.end_date) : null,
         exercises: formData.exercises,
       })
       .select("id")
@@ -294,7 +341,7 @@ export async function importRoutine(formData: {
         routine_id: inserted.id,
         user_id: uid,
       }))
-      const { error: assignErr } = await supabase
+      const { error: assignErr } = await supabaseAdmin
         .from("routine_user_assignments")
         .insert(assignments)
         .select("id, routine_id, user_id")
