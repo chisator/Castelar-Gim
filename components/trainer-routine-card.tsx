@@ -19,6 +19,8 @@ interface Exercise {
   duration?: string
   notes?: string
   video_url?: string
+  metric_type?: "reps" | "time"
+  time_unit?: "seconds" | "minutes"
 }
 
 interface Routine {
@@ -56,7 +58,15 @@ function ExerciseItem({ exercise }: { exercise: Exercise }) {
       <p className="font-medium text-base">{exercise.name}</p>
       <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
         {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
-        {exercise.reps && <p className="text-muted-foreground">Reps: <span className="text-foreground">{exercise.reps}</span></p>}
+        {exercise.reps && (
+          <p className="text-muted-foreground">
+            {exercise.metric_type === "time" ? "Tiempo: " : "Reps: "}
+            <span className="text-foreground">
+              {exercise.reps}
+              {exercise.metric_type === "time" && (exercise.time_unit === "minutes" ? "'" : "\"")}
+            </span>
+          </p>
+        )}
         {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!exercise.weight.toLowerCase().includes("kg") && " kg"}</span></p>}
         {exercise.duration && <p className="text-muted-foreground">Descanso: <span className="text-foreground">{exercise.duration}</span></p>}
       </div>
