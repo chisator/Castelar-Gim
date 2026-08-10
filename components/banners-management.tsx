@@ -2,17 +2,26 @@
 
 import { useState } from "react"
 import { uploadBanner, deleteBanner, toggleBannerStatus, updateBannersOrder } from "@/app/actions/banner-actions"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Plus, GripVertical } from "lucide-react"
+import { Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Plus } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 
-export function BannersManagement({ initialBanners }: { initialBanners: any[] }) {
+interface Banner {
+  id: string
+  image_url: string
+  image_url_mobile: string | null
+  link_url?: string | null
+  is_active: boolean
+  display_order: number
+}
+
+export function BannersManagement({ initialBanners }: { initialBanners: Banner[] }) {
     const [banners, setBanners] = useState(initialBanners)
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)

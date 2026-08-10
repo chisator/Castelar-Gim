@@ -13,7 +13,23 @@ import { Logo } from "@/components/logo"
 import { ExportPdfButton } from "@/components/export-pdf-button"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 
+interface PageRoutine {
+  id: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  trainer_id?: string
+  updated_by?: string
+  exercises?: unknown[]
+  creator_name?: string
+  updater_name?: string | null
+  updated_at?: string
+}
 
+interface RoutineAssignment {
+  routine_id: string
+}
 
 export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string; createdBy?: string } }) {
   const supabase = await createClient()
@@ -62,7 +78,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
     .order("full_name")
 
   // Construir la consulta de rutinas según los filtros activos
-  let routines = [] as any[]
+  let routines: PageRoutine[] = []
   const userIdFilter = searchParams?.userId
   const createdByFilter = searchParams?.createdBy
 
@@ -91,14 +107,14 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       .eq("user_id", userIdFilter)
       .order("created_at", { ascending: false })
 
-    const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
+    const routineIds = (routineAssignments || []).map((r: RoutineAssignment) => r.routine_id)
     if (routineIds.length > 0) {
       const { data } = await supabaseAdmin
         .from("routines")
         .select("*")
         .in("id", routineIds)
         .order("end_date", { ascending: false })
-      routines = data || []
+      routines = (data as PageRoutine[]) || []
     }
   } else if (createdByFilter) {
     // Solo filtro de creador: todas las rutinas de ese entrenador
@@ -113,7 +129,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
     const { data: assignedRoutinesQuery } = assignedUserIds.length > 0
       ? await supabaseAdmin.from("routine_user_assignments").select("routine_id").in("user_id", assignedUserIds)
       : { data: [] }
-    const routineIds = (assignedRoutinesQuery || []).map((r: any) => r.routine_id)
+    const routineIds = (assignedRoutinesQuery || []).map((r: RoutineAssignment) => r.routine_id)
 
     let query = supabaseAdmin.from("routines").select("*").order("end_date", { ascending: false })
 
@@ -123,7 +139,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       query = query.eq("trainer_id", user.id)
     }
     const { data } = await query
-    routines = data || []
+    routines = (data as PageRoutine[]) || []
   }
 
   // Anexar información de los creadores y los últimos editores a cada rutina
@@ -138,7 +154,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
     const trainerMap = new Map((trainersInfo || []).map(t => [t.id, t.full_name]))
     routines = routines.map(r => ({
       ...r,
-      creator_name: trainerMap.get(r.trainer_id) || "Sin Creador",
+      creator_name: trainerMap.get(r.trainer_id || "") || "Sin Creador",
       updater_name: r.updated_by ? trainerMap.get(r.updated_by) : null
     }))
   }
@@ -323,7 +339,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             <h3 className="text-2xl font-bold mb-4">Próximas Rutinas</h3>
             {upcomingRoutines.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 items-start">
-                {upcomingRoutines.map((routine: any, index: number) => (
+                {upcomingRoutines.map((routine, index) => (
                   <TrainerRoutineCard key={routine.id} routine={routine} index={index} />
                 ))}
               </div>
@@ -345,7 +361,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             <h3 className="text-2xl font-bold mb-4">Rutinas Anteriores</h3>
             {pastRoutines.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 items-start">
-                {pastRoutines.slice(0, 4).map((routine: any, index: number) => (
+                {pastRoutines.slice(0, 4).map((routine, index) => (
                   <TrainerRoutineCard key={routine.id} routine={routine} isPast index={index} />
                 ))}
               </div>

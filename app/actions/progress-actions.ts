@@ -2,6 +2,22 @@
 
 import { createClient as createServerClient } from "@/lib/server"
 
+interface WorkoutLogEntry {
+    exercise_name: string
+}
+
+interface ExerciseSet {
+    weight: string | number
+    reps: string | number
+}
+
+interface ProgressEntry {
+    date: string
+    weight: number
+    oneRM: number
+    volume: number
+}
+
 export async function getUniqueExercises() {
     const supabase = await createServerClient()
     const {
@@ -26,7 +42,7 @@ export async function getUniqueExercises() {
     if (error || !data) return []
 
     // Filter distinct in JS/Typescript as supabase .select distinct on join might be tricky syntax or require raw sql
-    const uniqueNames = Array.from(new Set(data.map((d: any) => d.exercise_name)))
+    const uniqueNames = Array.from(new Set(data.map((d: WorkoutLogEntry) => d.exercise_name)))
 
     return uniqueNames
 }
@@ -59,15 +75,15 @@ export async function getExerciseProgress(exerciseName: string) {
         if (!data) return { data: [] }
 
         // Process data to find metrics per session
-        const progressData = data.map((entry: any) => {
+        const progressData = (data as { exercise_name: string; sets_data: ExerciseSet[]; workout_logs: { date: string }[] }[]).map((entry) => {
             const sets = entry.sets_data || []
             let maxWeight = 0
             let maxOneRM = 0
             let totalVolume = 0
 
-            sets.forEach((s: any) => {
-                const w = parseFloat(s.weight)
-                const r = parseFloat(s.reps)
+            sets.forEach((s: ExerciseSet) => {
+                const w = parseFloat(String(s.weight))
+                const r = parseFloat(String(s.reps))
 
                 if (!isNaN(w) && w > 0) {
                     // Max Weight
@@ -86,17 +102,17 @@ export async function getExerciseProgress(exerciseName: string) {
             })
 
             return {
-                date: entry.workout_logs.date,
+                date: entry.workout_logs[0].date,
                 weight: maxWeight,
                 oneRM: Math.round(maxOneRM * 10) / 10, // Round to 1 decimal
                 volume: totalVolume
             }
         })
             // Sort by date 
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .sort((a: ProgressEntry, b: ProgressEntry) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
         return { data: progressData }
-    } catch (error: any) {
-        return { error: error.message }
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) }
     }
 }

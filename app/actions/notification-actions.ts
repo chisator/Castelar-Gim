@@ -23,8 +23,8 @@ export async function getActiveNotification() {
     }
 
     return { success: true, notification: data || null }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener notificaciones" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener notificaciones" }
   }
 }
 
@@ -49,8 +49,8 @@ export async function getAllNotifications() {
     }
 
     return { success: true, notifications: data || [] }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener notificaciones" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener notificaciones" }
   }
 }
 
@@ -89,8 +89,8 @@ export async function createNotification(message: string, color: string, daysToL
     revalidatePath("/", "layout")
     revalidatePath("/admin/notificaciones")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al crear notificación" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al crear notificación" }
   }
 }
 
@@ -116,8 +116,8 @@ export async function deactivateNotification(id: string) {
     revalidatePath("/", "layout")
     revalidatePath("/admin/notificaciones")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al desactivar notificación" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al desactivar notificación" }
   }
 }
 
@@ -143,7 +143,7 @@ export async function deleteNotification(id: string) {
       revalidatePath("/", "layout")
       revalidatePath("/admin/notificaciones")
       return { success: true }
-    } catch (error: any) {
-      return { error: error.message || "Error al eliminar notificación" }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Error al eliminar notificación" }
     }
   }

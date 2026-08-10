@@ -8,6 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
+interface WorkoutLog {
+  id: string
+  date: string
+  notes?: string
+}
+
 export default async function RoutineHistoryPage({ params }: { params: { routineId: string } }) {
     const supabase = await createClient()
     const {
@@ -26,7 +32,7 @@ export default async function RoutineHistoryPage({ params }: { params: { routine
     if (!routine) return <div>Rutina no encontrada</div>
 
     // Obtener logs
-    const { data: logs, error } = await getWorkoutLogs(params.routineId)
+    const { data: logs } = await getWorkoutLogs(params.routineId)
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -54,7 +60,7 @@ export default async function RoutineHistoryPage({ params }: { params: { routine
 
             <div className="space-y-4">
                 {logs && logs.length > 0 ? (
-                    logs.map((log: any) => (
+                    logs.map((log: WorkoutLog) => (
                         <Link key={log.id} href={`/deportista/registros/${params.routineId}/${log.id}`}>
                             <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
                                 <CardHeader className="flex flex-row items-center justify-between p-4 pb-2 space-y-0">

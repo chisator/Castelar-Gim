@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/client"
 import { importRoutine } from "@/app/actions/trainer-actions"
 import { getLatestPRForUserAndExercise } from "@/app/actions/pr-actions"
 import { Button } from "@/components/ui/button"
@@ -43,10 +42,22 @@ interface Exercise {
   catalog_id?: string
 }
 
+interface Athlete {
+  id: string
+  full_name: string
+  email?: string
+}
+
+interface Trainer {
+  id: string
+  full_name: string
+  email?: string
+}
+
 interface CreateRoutineFormProps {
-  athletes: any[]
+  athletes: Athlete[]
   creatorId: string
-  trainers?: any[]
+  trainers?: Trainer[]
   isAdmin?: boolean
   exerciseCatalog: ExerciseCatalogItem[]
 }
@@ -96,10 +107,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   }
 
   const addUserSlot = () => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => [...prev, ""])
   }
 
   const removeUserSlot = (idx: number) => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => {
       if (prev.length <= 1) return prev
       return prev.filter((_, i) => i !== idx)
@@ -160,7 +173,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setIsLoading(true)
     setError(null)
 
-    const validUserIds = selectedUserIds.filter(Boolean)
+    const validUserIds = [...new Set(selectedUserIds.filter(Boolean))]
     if (validUserIds.length === 0) {
       setError("Debes seleccionar al menos un usuario deportista")
       setIsLoading(false)
@@ -212,8 +225,8 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
 
       router.push(isAdmin ? "/admin" : "/entrenador")
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || "Error al crear la rutina")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear la rutina")
     } finally {
       setIsLoading(false)
     }

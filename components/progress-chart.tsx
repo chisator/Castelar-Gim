@@ -96,7 +96,7 @@ export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
                                                             {format(new Date(label), "d MMMM yyyy", { locale: es })}
                                                         </span>
                                                     </div>
-                                                    {payload.map((p: any) => (
+                                                    {payload.map((p) => (
                                                         <div key={p.name} className="flex items-center gap-2">
                                                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
                                                             <span className="text-sm text-muted-foreground capitalize">

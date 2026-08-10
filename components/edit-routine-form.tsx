@@ -29,12 +29,36 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+interface Routine {
+  id: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  scheduled_date?: string
+  trainer_id: string
+  user_id?: string
+  exercises?: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string }[]
+}
+
+interface Athlete {
+  id: string
+  full_name: string
+  email?: string
+}
+
+interface Trainer {
+  id: string
+  full_name?: string
+  email?: string
+}
+
 interface EditRoutineFormProps {
-  routine: any
-  athletes: any[]
+  routine: Routine
+  athletes: Athlete[]
   assignedUserIds?: string[]
   isAdmin?: boolean
-  trainers?: any[]
+  trainers?: Trainer[]
   exerciseCatalog: ExerciseCatalogItem[]
 }
 
@@ -48,7 +72,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   const [description, setDescription] = useState(routine.description || "")
   const initialUserIds = assignedUserIds && assignedUserIds.length > 0
     ? assignedUserIds.filter(Boolean)
-    : [""]
+    : [routine.user_id || ""]
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(initialUserIds.length > 0 ? initialUserIds : [""])
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(routine.trainer_id)
   const [startDate, setStartDate] = useState(
@@ -64,12 +88,12 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   }
 
   const removeExercise = (index: number) => {
-    setExercises(exercises.filter((_: any, i: number) => i !== index))
+    setExercises(exercises.filter((_: unknown, i: number) => i !== index))
   }
 
   const updateExercise = (index: number, field: string, value: string) => {
     const newExercises = [...exercises]
-    newExercises[index][field] = value
+    newExercises[index] = { ...newExercises[index], [field]: value }
     setExercises(newExercises)
   }
 
@@ -91,10 +115,12 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   }
 
   const addUserSlot = () => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => [...prev, ""])
   }
 
   const removeUserSlot = (idx: number) => {
+    setOpenComboboxIndex(null)
     setSelectedUserIds((prev) => {
       if (prev.length <= 1) return prev
       return prev.filter((_, i) => i !== idx)
@@ -106,7 +132,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
     setIsLoading(true)
     setError(null)
 
-    const validUserIds = selectedUserIds.filter(Boolean)
+    const validUserIds = [...new Set(selectedUserIds.filter(Boolean))]
     if (validUserIds.length === 0) {
       setError("Debes seleccionar al menos un usuario deportista")
       setIsLoading(false)
@@ -132,7 +158,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
       userIds: validUserIds,
       startDate,
       endDate,
-      exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
+      exercises: exercises.filter((ex: { name: string }) => ex.name.trim() !== ""),
       trainerId: selectedTrainerId,
     })
 
@@ -284,7 +310,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
               </Button>
             </div>
 
-            {exercises.map((exercise: any, index: number) => (
+            {exercises.map((exercise: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string }, index: number) => (
               <Card key={index}>
                 <CardContent className="pt-6">
                   <div className="space-y-4">

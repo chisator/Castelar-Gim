@@ -78,8 +78,8 @@ export function ExportImportDialog({
       }
 
       onOpenChange(false)
-    } catch (err: any) {
-      setError(err.message || "Error al exportar")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al exportar")
     } finally {
       setIsLoading(false)
     }

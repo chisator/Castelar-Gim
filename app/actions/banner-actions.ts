@@ -19,8 +19,8 @@ export async function getActiveBanners() {
     }
 
     return { success: true, banners: data || [] }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener banners" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener banners" }
   }
 }
 
@@ -46,8 +46,8 @@ export async function getAllBanners() {
     }
 
     return { success: true, banners: data || [] }
-  } catch (error: any) {
-    return { error: error.message || "Error al obtener banners" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al obtener banners" }
   }
 }
 
@@ -75,8 +75,8 @@ export async function toggleBannerStatus(id: string, currentStatus: boolean) {
     revalidatePath("/admin/banners")
     revalidatePath("/deportista")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al actualizar estado" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al actualizar estado" }
   }
 }
 
@@ -140,8 +140,8 @@ export async function deleteBanner(id: string, imageUrl: string, imageMobileUrl?
     revalidatePath("/admin/banners")
     revalidatePath("/deportista")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al eliminar banner" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al eliminar banner" }
   }
 }
 
@@ -168,8 +168,8 @@ export async function updateBannersOrder(orderedIds: string[]) {
     revalidatePath("/admin/banners")
     revalidatePath("/deportista")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al reordenar banners" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al reordenar banners" }
   }
 }
 
@@ -214,8 +214,8 @@ export async function uploadBanner(formData: FormData) {
         if (fileMobile && fileMobile.size > 0) {
             imageMobileUrl = await uploadFile(fileMobile)
         }
-    } catch (error: any) {
-        return { error: `Error subiendo archivo: ${error.message}` }
+    } catch (error) {
+        return { error: `Error subiendo archivo: ${error instanceof Error ? error.message : String(error)}` }
     }
 
     // Obtener el último orden para ponerlo al final
@@ -245,7 +245,7 @@ export async function uploadBanner(formData: FormData) {
     revalidatePath("/admin/banners")
     revalidatePath("/deportista")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al crear banner" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al crear banner" }
   }
 }

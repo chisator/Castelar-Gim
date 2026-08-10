@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { Play, Pause, Square, Timer, RotateCcw, ChevronDown, ChevronUp, Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -33,7 +34,7 @@ export function WorkoutTimer() {
     }, [])
 
     const ensureAudioContext = useCallback(() => {
-        const Ctx = window.AudioContext || (window as any).webkitAudioContext
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         if (!audioCtxRef.current) {
             audioCtxRef.current = new Ctx()
         }
@@ -257,15 +258,5 @@ export function WorkoutTimer() {
             </Button>
         </div>
     )
-
-    // Using a portal allows this to float above everything else including Dialogs
-    if (typeof document !== "undefined") {
-        import("react-dom").then(ReactDOM => {
-            // This is just for type safety, the dynamic import handles it
-        })
-    }
-
-    // Since we are in client component, we can use createPortal directly if we import it
-    const { createPortal } = require("react-dom")
     return createPortal(content, document.body)
 }

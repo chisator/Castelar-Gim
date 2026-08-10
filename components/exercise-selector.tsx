@@ -94,7 +94,7 @@ export function ExerciseSelector({ value, onChange, onSelectCatalogItem, catalog
                                 <CommandItem
                                     key={item.id}
                                     value={item.name}
-                                    onSelect={(currentValue) => {
+                                    onSelect={() => {
                                         // currentValue is the value prop of CommandItem (lowercased by cmkd)
                                         // We want the original name or the item name
                                         onChange(item.name)

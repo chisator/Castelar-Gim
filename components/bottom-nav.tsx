@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LineChart, ClipboardList, BookOpen, CalendarDays, ImageIcon, Bell } from "lucide-react"
+import { Home, LineChart, ClipboardList, BookOpen, ImageIcon, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MobileMenu } from "./mobile-menu"
 import { useState, useEffect } from "react"
@@ -49,11 +49,9 @@ export function BottomNav() {
     pathname.startsWith("/entrenador") ? "entrenador" : ""
   )
 
-  let links: { href: string; label: string; icon: any }[] = []
-  let role = roleToUse
+  let links: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = []
 
   if (roleToUse === "deportista") {
-    role = "deportista"
     links = [
       { href: "/deportista", label: "Inicio", icon: Home },
       { href: "/deportista/registros", label: "Registros", icon: ClipboardList },
@@ -97,7 +95,7 @@ export function BottomNav() {
         })}
         {/* Usamos MobileMenu como el botón "Más" */}
         <div className="flex flex-col items-center justify-center w-full h-full">
-          <MobileMenu role={role} />
+          <MobileMenu />
         </div>
       </nav>
     </div>

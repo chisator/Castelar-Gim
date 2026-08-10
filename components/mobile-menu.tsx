@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
@@ -10,11 +8,7 @@ import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 
-interface MobileMenuProps {
-    role?: string
-}
-
-export function MobileMenu({ role }: MobileMenuProps) {
+export function MobileMenu() {
     const [open, setOpen] = useState(false)
 
     useEffect(() => {

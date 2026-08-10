@@ -4,7 +4,7 @@ import { createClient } from "@/lib/server"
 import { revalidatePath } from "next/cache"
 
 // Helper to check and renew credits
-async function checkAndRenewCredits(userId: string, supabase: any) {
+async function checkAndRenewCredits(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
     try {
         const { data: profile, error } = await supabase
             .from('profiles')
@@ -18,9 +18,9 @@ async function checkAndRenewCredits(userId: string, supabase: any) {
         const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
         const currentMonthSixth = new Date(now.getFullYear(), now.getMonth(), 6)
 
-        let updates: any = {}
-        let currentCredits = profile.activity_credits || {}
-        let expiringCredits = profile.expiring_activity_credits || {}
+        const updates: Record<string, unknown> = {}
+        let currentCredits = (profile.activity_credits || {}) as Record<string, number>
+        let expiringCredits = (profile.expiring_activity_credits || {}) as Record<string, number>
 
         // 1. Renewal Logic (1st of Month) -> Move tickets to Expiring
         const lastRenewal = new Date(profile.last_renewal_date || '2000-01-01')
@@ -84,11 +84,11 @@ export async function reserveClass(classId: string, userId: string) {
 
         // Validate tickets for this specific class BEFORE moving forward
         const activityTitle = classData.title;
-        let currentCredits = profile.activity_credits || {};
-        let expiringCredits = profile.expiring_activity_credits || {};
+        const currentCredits = (profile.activity_credits || {}) as Record<string, number>
+        const expiringCredits = (profile.expiring_activity_credits || {}) as Record<string, number>
         
-        let c = currentCredits[activityTitle] || 0;
-        let e = expiringCredits[activityTitle] || 0;
+        const c = currentCredits[activityTitle] || 0;
+        const e = expiringCredits[activityTitle] || 0;
 
         if (c <= 0 && e <= 0) {
             return { error: `No tienes tickets suficientes para ${activityTitle}` }
@@ -211,6 +211,9 @@ export async function cancelReservation(classId: string, userId: string) {
             .eq('class_id', classId)
             .single()
 
+        if (reservationError) {
+            return { error: "Error al verificar la reserva" }
+        }
         if (!existing) {
             return { error: "No tienes una reserva para esta clase" }
         }
@@ -240,7 +243,7 @@ export async function cancelReservation(classId: string, userId: string) {
             .single()
 
         if (profile && classData) {
-            const currentCredits = profile.activity_credits || {};
+            const currentCredits = (profile.activity_credits || {}) as Record<string, number>
             const title = classData.title;
             currentCredits[title] = (currentCredits[title] || 0) + 1;
 
@@ -248,6 +251,10 @@ export async function cancelReservation(classId: string, userId: string) {
                 .from('profiles')
                 .update({ activity_credits: currentCredits })
                 .eq('id', userId)
+
+            if (updateError) {
+                return { error: "Error al reembolsar el crédito" }
+            }
         }
 
         revalidatePath('/deportista')

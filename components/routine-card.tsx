@@ -6,19 +6,37 @@ import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 
-// ... imports remain mostly the same, remove Dialog imports if unused
+interface Exercise {
+  name: string
+  sets?: string
+  reps?: string
+  weight?: string
+  duration?: string
+  notes?: string
+  video_url?: string
+}
 
-interface RoutineCardProps {
-  routine: any
-  attendance?: any
-  athleteId: string
-  isPast?: boolean
+interface Routine {
+  id: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  exercises?: unknown[]
+  sports?: { name?: string }
+}
+
+function isExercise(value: unknown): value is Exercise {
+  return typeof value === 'object' && value !== null && 'name' in value
+}
+
+interface Attendance {
+  completed?: boolean
 }
 
 // Helper component for individual exercise items with video toggle
-function ExerciseItem({ exercise }: { exercise: any }) {
+function ExerciseItem({ exercise }: { exercise: Exercise }) {
   const [showVideo, setShowVideo] = useState(false)
 
   const getYouTubeId = (url: string) => {
@@ -28,7 +46,7 @@ function ExerciseItem({ exercise }: { exercise: any }) {
     return (match && match[2].length === 11) ? match[2] : null
   }
 
-  const videoId = getYouTubeId(exercise.video_url)
+  const videoId = getYouTubeId(exercise.video_url || "")
 
   return (
     <li className="text-sm bg-muted p-3 rounded-md">
@@ -73,18 +91,15 @@ function ExerciseItem({ exercise }: { exercise: any }) {
 }
 
 interface RoutineCardProps {
-  routine: any
-  attendance?: any
+  routine: Routine
+  attendance?: Attendance
   athleteId: string
   isPast?: boolean
   index?: number
 }
 
-// ... (ExerciseItem remains same)
-
-export function RoutineCard({ routine, attendance, athleteId, isPast = false, index = 0 }: RoutineCardProps) {
+export function RoutineCard({ routine, attendance, isPast = false }: RoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const router = useRouter()
 
   const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
 
@@ -159,7 +174,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false, in
                   <div>
                     <h4 className="font-semibold mb-2 text-sm">Ejercicios</h4>
                     <ul className="space-y-4">
-                      {exercises.map((exercise: any, index: number) => (
+                      {exercises.filter(isExercise).map((exercise, index) => (
                         <ExerciseItem key={index} exercise={exercise} />
                       ))}
                     </ul>
@@ -174,5 +189,3 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false, in
     </Card>
   )
 }
-
-

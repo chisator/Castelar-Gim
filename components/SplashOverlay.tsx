@@ -14,10 +14,10 @@ interface SplashEventDetail {
 let splashLocked = false
 
 const SHARED_FINAL_SIZE = 180
-const BURST_DURATION = 1400
-const SHRINK_DURATION = 600
-const GROW_DURATION = 1000
-const FADE_DURATION = 300
+const BURST_DURATION = 800
+const SHRINK_DURATION = 350
+const GROW_DURATION = 600
+const FADE_DURATION = 200
 const SAFETY_TIMEOUT = 8000
 
 export function SplashOverlay() {
@@ -142,37 +142,6 @@ export function SplashOverlay() {
     }
   }, [phase, cloneStyle, doFade])
 
-  useEffect(() => {
-    if (phase === "burst") {
-      if (
-        !triggerPathRef.current ||
-        pathname === triggerPathRef.current
-      )
-        return
-
-      const elapsed = Date.now() - startTimeRef.current
-      const remaining = Math.max(0, BURST_DURATION - elapsed)
-
-      setTimeout(() => {
-        const startPoll = () => {
-          const poll = () => {
-            const el = (
-                document.querySelector('[data-splash-target-logo]') ||
-                document.querySelector('[data-splash-target="header"]')
-              ) as HTMLElement | null
-            if (el) {
-              animateShrink(el)
-            } else {
-              pollRafRef.current = requestAnimationFrame(poll)
-            }
-          }
-          pollRafRef.current = requestAnimationFrame(poll)
-        }
-        startPoll()
-      }, remaining)
-    }
-  }, [phase, pathname])
-
   const animateShrink = useCallback(
     (targetEl: HTMLElement) => {
       if (animatingRef.current) return
@@ -222,8 +191,30 @@ export function SplashOverlay() {
         doFade()
       }
     },
-    [doFade]
+    [doFade, cloneStyle.width]
   )
+
+  useEffect(() => {
+    if (phase !== "burst") return
+    if (
+      !triggerPathRef.current ||
+      pathname === triggerPathRef.current
+    )
+      return
+
+    const poll = () => {
+      const el = (
+          document.querySelector('[data-splash-target-logo]') ||
+          document.querySelector('[data-splash-target="header"]')
+        ) as HTMLElement | null
+      if (el) {
+        animateShrink(el)
+      } else {
+        pollRafRef.current = requestAnimationFrame(poll)
+      }
+    }
+    pollRafRef.current = requestAnimationFrame(poll)
+  }, [phase, pathname, animateShrink])
 
   useEffect(() => {
     if (phase !== "growing") return
@@ -266,7 +257,7 @@ export function SplashOverlay() {
     if (phase !== "growing") return
     if (pathname !== "/auth/login") return
     const elapsed = Date.now() - startTimeRef.current
-    const remaining = Math.max(0, 1000 - elapsed)
+    const remaining = Math.max(0, GROW_DURATION - elapsed)
     const timer = setTimeout(() => doFade(), remaining)
     return () => clearTimeout(timer)
   }, [phase, pathname, doFade])
@@ -311,6 +302,7 @@ export function SplashOverlay() {
           transformOrigin: "center center",
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Layer1000.svg"
           alt="Castelar Gimnasio"

@@ -30,7 +30,7 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
   const parseExcelFile = (arrayBuffer: ArrayBuffer): Exercise[] => {
     const workbook = XLSX.read(arrayBuffer, { type: "array" })
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-    const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][]
+    const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as unknown[][]
 
     if (data.length < 2) {
       throw new Error("El archivo Excel debe contener al menos un ejercicio")
@@ -126,8 +126,8 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
       onImport(exercises)
       setFile(null)
       onOpenChange(false)
-    } catch (err: any) {
-      setError(err.message || "Error al procesar el archivo")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al procesar el archivo")
     } finally {
       setIsLoading(false)
     }

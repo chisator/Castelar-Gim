@@ -4,6 +4,16 @@ import { createClient as createServerClient } from "@/lib/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 
+interface Exercise {
+  name: string
+  sets?: string
+  reps?: string
+  weight?: string
+  duration?: string
+  notes?: string
+  video_url?: string
+}
+
 export async function updateRoutine(formData: {
   routineId: string
   title: string
@@ -12,7 +22,7 @@ export async function updateRoutine(formData: {
   userIds?: string[]
   startDate?: string
   endDate?: string
-  exercises: any[]
+  exercises: Exercise[]
   // New optional field for admin to assign routine to a specific trainer
   trainerId?: string
 }) {
@@ -35,7 +45,7 @@ export async function updateRoutine(formData: {
       { auth: { persistSession: false } }
     )
 
-    const updatePayload: any = {
+    const updatePayload: Record<string, unknown> = {
       title: formData.title,
       description: formData.description,
       exercises: formData.exercises,
@@ -57,7 +67,7 @@ export async function updateRoutine(formData: {
       updatePayload.trainer_id = formData.trainerId
     }
 
-    let query = supabaseAdmin.from("routines").update(updatePayload).eq("id", formData.routineId)
+    const query = supabaseAdmin.from("routines").update(updatePayload).eq("id", formData.routineId)
 
     const { error: updateError } = await query
 
@@ -84,8 +94,8 @@ export async function updateRoutine(formData: {
     revalidatePath("/entrenador")
     revalidatePath("/admin") // Revalidate admin page also
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al actualizar rutina" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al actualizar rutina" }
   }
 }
 
@@ -112,8 +122,8 @@ export async function deleteRoutine(routineId: string) {
     revalidatePath("/entrenador")
     revalidatePath("/admin") // Revalidate admin page also
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al eliminar rutina" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al eliminar rutina" }
   }
 }
 
@@ -177,8 +187,8 @@ export async function renewRoutine({
 
     revalidatePath("/entrenador")
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || "Error al renovar rutina" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al renovar rutina" }
   }
 }
 
@@ -204,7 +214,7 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
       return { error: "Rutina no encontrada" }
     }
 
-    const exercises = routine.exercises || []
+    const exercises = (routine.exercises as Exercise[]) || []
 
     if (format === "json") {
       // Exportar solo los ejercicios como array
@@ -214,9 +224,9 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
     if (format === "csv") {
       // Exportar solo ejercicios en CSV con encabezados
       let csv = "name,sets,reps,weight,rest,notes\n"
-      exercises.forEach((ex: any) => {
+      exercises.forEach((ex: Exercise) => {
         const weight = ex.weight || ""
-        const rest = ex.rest || ""
+        const rest = ex.duration || ""
         const notes = (ex.notes || "").replace(/"/g, '""') // Escapar comillas
         csv += `"${ex.name}","${ex.sets || ""}","${ex.reps || ""}","${weight}","${rest}","${notes}"\n`
       })
@@ -224,8 +234,8 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
     }
 
     return { error: "Formato no soportado" }
-  } catch (error: any) {
-    return { error: error.message || "Error al exportar rutina" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al exportar rutina" }
   }
 }
 
@@ -234,7 +244,7 @@ export async function importRoutine(formData: {
   description: string
   start_date: string
   end_date: string
-  exercises: any[]
+  exercises: Exercise[]
   userIds: string[]
   // New optional field for admin
   trainerId?: string
@@ -284,7 +294,7 @@ export async function importRoutine(formData: {
         routine_id: inserted.id,
         user_id: uid,
       }))
-      const { data: insertedAssignments, error: assignErr } = await supabase
+      const { error: assignErr } = await supabase
         .from("routine_user_assignments")
         .insert(assignments)
         .select("id, routine_id, user_id")
@@ -295,7 +305,7 @@ export async function importRoutine(formData: {
     revalidatePath("/entrenador")
     revalidatePath("/deportista")
     return { success: true, routineId: inserted.id }
-  } catch (error: any) {
-    return { error: error.message || "Error al importar rutina" }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al importar rutina" }
   }
 }

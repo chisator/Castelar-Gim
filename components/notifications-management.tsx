@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { createNotification, deactivateNotification, deleteNotification } from "@/app/actions/notification-actions"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +21,7 @@ const COLORS = [
     { id: "purple", name: "Púrpura", class: "bg-purple-500", textClass: "text-purple-500" },
 ]
 
-export function NotificationsManagement({ initialNotifications }: { initialNotifications: any[] }) {
+export function NotificationsManagement({ initialNotifications }: { initialNotifications: { id: string; message: string; color: string; active_until: string; is_active: boolean; created_at: string }[] }) {
     const [notifications, setNotifications] = useState(initialNotifications)
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -80,7 +80,7 @@ export function NotificationsManagement({ initialNotifications }: { initialNotif
         setIsLoading(false)
     }
 
-    const isCurrentlyActive = (notif: any) => {
+    const isCurrentlyActive = (notif: { is_active: boolean; active_until: string }) => {
         return notif.is_active && new Date(notif.active_until) >= new Date()
     }
 

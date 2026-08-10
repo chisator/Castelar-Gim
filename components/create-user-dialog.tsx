@@ -184,7 +184,7 @@ export function CreateUserDialog({
           {isAdmin && (
             <div className="grid gap-2">
               <Label htmlFor="cu-role">Rol</Label>
-              <Select value={role} onValueChange={(value: any) => setRole(value)}>
+              <Select value={role} onValueChange={(value: "deportista" | "entrenador" | "administrador") => setRole(value)}>
                 <SelectTrigger id="cu-role">
                   <SelectValue />
                 </SelectTrigger>

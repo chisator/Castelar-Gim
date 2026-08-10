@@ -19,35 +19,40 @@ export function LogoutButton({ className, iconOnly = false }: LogoutButtonProps)
   const handleLogout = async () => {
     setIsLoading(true)
 
-    const menuEl = document.querySelector('[data-splash-source="menu"]') as HTMLElement | null
-    const headerEl = (
-      document.querySelector('[data-splash-target-logo]') ||
-      document.querySelector('[data-splash-target="header"]')
-    ) as HTMLElement | null
+    try {
+      const menuEl = document.querySelector('[data-splash-source="menu"]') as HTMLElement | null
+      const headerEl = (
+        document.querySelector('[data-splash-target-logo]') ||
+        document.querySelector('[data-splash-target="header"]')
+      ) as HTMLElement | null
 
-    let sourceRect: { top: number; left: number; width: number; height: number } | null = null
+      let sourceRect: { top: number; left: number; width: number; height: number } | null = null
 
-    const menuRect = menuEl?.getBoundingClientRect()
-    if (menuRect && menuRect.width > 0) {
-      sourceRect = menuRect
-    } else {
-      const headerRect = headerEl?.getBoundingClientRect()
-      if (headerRect && headerRect.width > 0) {
-        sourceRect = headerRect
+      const menuRect = menuEl?.getBoundingClientRect()
+      if (menuRect && menuRect.width > 0) {
+        sourceRect = menuRect
+      } else {
+        const headerRect = headerEl?.getBoundingClientRect()
+        if (headerRect && headerRect.width > 0) {
+          sourceRect = headerRect
+        }
       }
+
+      window.dispatchEvent(
+        new CustomEvent("splash:trigger", {
+          detail: { mode: "logout-to-login", sourceRect },
+        })
+      )
+
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push("/auth/login")
+      router.refresh()
+    } catch {
+      // SignOut failed silently — session may already be invalid
+    } finally {
+      setIsLoading(false)
     }
-
-    window.dispatchEvent(
-      new CustomEvent("splash:trigger", {
-        detail: { mode: "logout-to-login", sourceRect },
-      })
-    )
-
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/auth/login")
-    router.refresh()
   }
 
   return (

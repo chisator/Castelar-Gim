@@ -1,17 +1,44 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { LogoutButton } from "@/components/logout-button"
 import { RoutineCard } from "@/components/routine-card"
-import Image from "next/image"
 import { Logo } from "@/components/logo"
 import { BannerCarousel } from "@/components/banner-carousel"
 import { getActiveBanners } from "@/app/actions/banner-actions"
 
+interface RoutineAssignment {
+  routines: {
+    id: string
+    title: string
+    description?: string
+    start_date?: string
+    end_date?: string
+    exercises?: unknown[]
+    trainer: { full_name?: string } | { full_name?: string }[]
+  } | {
+    id: string
+    title: string
+    description?: string
+    start_date?: string
+    end_date?: string
+    exercises?: unknown[]
+    trainer: { full_name?: string } | { full_name?: string }[]
+  }[]
+}
 
+interface RoutineWithTrainer {
+  id: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  exercises?: unknown[]
+  trainer?: { full_name?: string }
+}
 
 export default async function DeportistaPage() {
   const supabase = await createClient()
@@ -44,8 +71,8 @@ export default async function DeportistaPage() {
     .eq("user_id", user.id)
 
   // Extraer, aplanar y ordenar las rutinas
-  let routinesWithTrainers = routineAssignments
-    ?.map((assignment: any) => {
+  const routinesWithTrainers = (routineAssignments as RoutineAssignment[] || [])
+    ?.map((assignment) => {
       if (!assignment.routines) return null;
       // Supabase puede devolver un arreglo si la relación es 1:N o un objeto si es N:1
       // routine_user_assignments -> routines es N:1 (cada asignación tiene 1 rutina)
@@ -58,7 +85,7 @@ export default async function DeportistaPage() {
         trainer: Array.isArray(routine.trainer) ? routine.trainer[0] : routine.trainer,
       };
     })
-    .filter(Boolean) || [];
+    .filter(Boolean) as RoutineWithTrainer[];
 
   // Ordenar rutinas por fecha de fin
   routinesWithTrainers.sort((a, b) => {
@@ -66,9 +93,6 @@ export default async function DeportistaPage() {
     const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
     return dateA - dateB;
   });
-
-  // Calcular estadísticas
-  const totalRoutines = routinesWithTrainers.length || 0
 
   // Banners
   const { banners } = await getActiveBanners()
@@ -140,7 +164,7 @@ export default async function DeportistaPage() {
             <h3 className="text-2xl font-bold mb-4">Próximas Rutinas</h3>
             {upcomingRoutines && upcomingRoutines.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 items-start">
-                {upcomingRoutines.map((routine: any, index: number) => (
+                {upcomingRoutines.map((routine, index) => (
                   <RoutineCard
                     key={routine.id}
                     routine={routine}
@@ -162,7 +186,7 @@ export default async function DeportistaPage() {
             <h3 className="text-2xl font-bold mb-4">Rutinas Anteriores</h3>
             {pastRoutines && pastRoutines.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 items-start">
-                {pastRoutines.slice(0, 4).map((routine: any, index: number) => (
+                {pastRoutines.slice(0, 4).map((routine, index) => (
                   <RoutineCard
                     key={routine.id}
                     routine={routine}

@@ -19,9 +19,25 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
+interface Assignment {
+  id: string
+  user_id: string
+  trainer_id: string
+  created_at: string
+  profiles?: { full_name?: string; email?: string }
+  trainer?: { full_name?: string }
+}
+
+interface User {
+  id: string
+  full_name?: string
+  email?: string
+  role?: string
+}
+
 interface AssignmentsTableProps {
-  assignments: any[]
-  users: any[]
+  assignments: Assignment[]
+  users: User[]
   totalPages?: number
 }
 
