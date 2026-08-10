@@ -9,6 +9,8 @@ interface WorkoutLogEntry {
 interface ExerciseSet {
     weight: string | number
     reps: string | number
+    time?: string | number
+    metric_type?: string
 }
 
 interface ProgressEntry {
@@ -16,6 +18,8 @@ interface ProgressEntry {
     weight: number
     oneRM: number
     volume: number
+    totalTime: number
+    isTimeBased: boolean
 }
 
 export async function getUniqueExercises() {
@@ -80,23 +84,33 @@ export async function getExerciseProgress(exerciseName: string) {
             let maxWeight = 0
             let maxOneRM = 0
             let totalVolume = 0
+            let totalTime = 0
+            let isTimeBased = false
 
             sets.forEach((s: ExerciseSet) => {
-                const w = parseFloat(String(s.weight))
-                const r = parseFloat(String(s.reps))
+                if (s.metric_type === "time") {
+                    isTimeBased = true
+                    const t = parseFloat(String(s.time))
+                    if (!isNaN(t) && t > 0) {
+                        totalTime += t
+                    }
+                } else {
+                    const w = parseFloat(String(s.weight))
+                    const r = parseFloat(String(s.reps))
 
-                if (!isNaN(w) && w > 0) {
-                    // Max Weight
-                    if (w > maxWeight) maxWeight = w
+                    if (!isNaN(w) && w > 0) {
+                        // Max Weight
+                        if (w > maxWeight) maxWeight = w
 
-                    // Volume (Weight * Reps)
-                    if (!isNaN(r) && r > 0) {
-                        totalVolume += w * r
+                        // Volume (Weight * Reps)
+                        if (!isNaN(r) && r > 0) {
+                            totalVolume += w * r
 
-                        // Estimated 1RM (Brzycki Formula)
-                        // 1RM = Weight / (1.0278 - (0.0278 * Reps))
-                        const oneRM = w / (1.0278 - (0.0278 * r))
-                        if (oneRM > maxOneRM) maxOneRM = oneRM
+                            // Estimated 1RM (Brzycki Formula)
+                            // 1RM = Weight / (1.0278 - (0.0278 * Reps))
+                            const oneRM = w / (1.0278 - (0.0278 * r))
+                            if (oneRM > maxOneRM) maxOneRM = oneRM
+                        }
                     }
                 }
             })
@@ -105,7 +119,9 @@ export async function getExerciseProgress(exerciseName: string) {
                 date: entry.workout_logs[0].date,
                 weight: maxWeight,
                 oneRM: Math.round(maxOneRM * 10) / 10, // Round to 1 decimal
-                volume: totalVolume
+                volume: totalVolume,
+                totalTime: totalTime,
+                isTimeBased: isTimeBased || totalTime > 0
             }
         })
             // Sort by date 

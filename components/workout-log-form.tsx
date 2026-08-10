@@ -12,8 +12,10 @@ import { Plus, Trash2, Save } from "lucide-react"
 import { toast } from "sonner"
 
 interface SetData {
-    weight: string
-    reps: string
+    weight?: string
+    reps?: string
+    time?: string
+    metric_type?: string
 }
 
 interface LogEntry {

@@ -12,6 +12,8 @@ interface Exercise {
   duration?: string
   notes?: string
   video_url?: string
+  metric_type?: "reps" | "time"
+  time_unit?: "seconds" | "minutes"
 }
 
 function normalizeToNoonUTC(dateStr: string): string | null {
@@ -269,7 +271,12 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
         const weight = ex.weight || ""
         const rest = ex.duration || ""
         const notes = (ex.notes || "").replace(/"/g, '""') // Escapar comillas
-        csv += `"${ex.name}","${ex.sets || ""}","${ex.reps || ""}","${weight}","${rest}","${notes}"\n`
+        let repsValue = ex.reps || ""
+        if (ex.metric_type === "time" && ex.reps) {
+          const unit = ex.time_unit === "minutes" ? "'" : "\""
+          repsValue = `${ex.reps}${unit}`
+        }
+        csv += `"${ex.name}","${ex.sets || ""}","${repsValue}","${weight}","${rest}","${notes}"\n`
       })
       return { success: true, data: csv, filename: `${routine.title}-ejercicios.csv` }
     }

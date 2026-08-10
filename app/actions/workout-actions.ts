@@ -7,7 +7,7 @@ interface WorkoutLogEntry {
   id: string
   workout_log_id: string
   exercise_name: string
-  sets_data: { weight: string; reps: string }[]
+  sets_data: { weight?: string; reps?: string; time?: string; metric_type?: string }[]
   notes: string | null
   order: number
 }
@@ -87,7 +87,7 @@ export async function createWorkoutLog(data: {
     notes?: string
     entries: {
         exercise_name: string
-        sets_data: { weight: string; reps: string }[]
+        sets_data: { weight?: string; reps?: string; time?: string; metric_type?: string }[]
         notes?: string
         order: number
     }[]
@@ -149,7 +149,7 @@ export async function updateWorkoutLog(
         entries?: {
             id?: string // Si tiene ID, actualizamos. Si no, creamos.
             exercise_name: string
-            sets_data: { weight: string; reps: string }[]
+            sets_data: { weight?: string; reps?: string; time?: string; metric_type?: string }[]
             notes?: string
             order: number
         }[]
