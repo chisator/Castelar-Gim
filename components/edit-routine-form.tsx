@@ -38,7 +38,7 @@ interface Routine {
   scheduled_date?: string
   trainer_id: string
   user_id?: string
-  exercises?: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes" }[]
+  exercises?: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes"; type?: "exercise" | "marker"; marker_color?: string }[]
 }
 
 interface Athlete {
@@ -83,8 +83,22 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
+  const MARKER_COLORS = [
+    "#FF6B00", // Naranja
+    "#3B82F6", // Azul
+    "#22C55E", // Verde
+    "#EF4444", // Rojo
+    "#A855F7", // Morado
+    "#6B7280", // Gris
+    "#EAB308", // Amarillo
+  ]
+
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", metric_type: "reps", time_unit: "seconds" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }])
+  }
+
+  const addMarker = () => {
+    setExercises([...exercises, { name: "", type: "marker", marker_color: MARKER_COLORS[0] }])
   }
 
   const removeExercise = (index: number) => {
@@ -321,163 +335,214 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Ejercicios</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addExercise}>
-                Agregar Ejercicio
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={addExercise}>
+                  Agregar Ejercicio
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={addMarker}>
+                  Agregar Marca
+                </Button>
+              </div>
             </div>
 
-            {exercises.map((exercise: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes" }, index: number) => (
-              <Card key={index}>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 grid gap-2">
-                        <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
-                        <ExerciseAutosuggest
+            {exercises.map((exercise: { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; video_url?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes"; type?: "exercise" | "marker"; marker_color?: string }, index: number) => (
+              <div key={index}>
+                {exercise.type === "marker" ? (
+                  <Card 
+                    style={{ 
+                      backgroundColor: exercise.marker_color || MARKER_COLORS[0],
+                      borderColor: exercise.marker_color || MARKER_COLORS[0],
+                      opacity: 0.9
+                    }}
+                  >
+                    <CardContent className="pt-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-white">Marca / División</h4>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)} className="text-white hover:text-white hover:bg-white/20">
+                          Eliminar
+                        </Button>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división</Label>
+                        <Input
+                          id={`marker-name-${index}`}
+                          placeholder="Ej: Día 1 - Piernas 🔥"
                           value={exercise.name}
-                          onChange={(val) => updateExercise(index, "name", val)}
-                          onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
-                          catalog={exerciseCatalog}
+                          onChange={(e) => updateExercise(index, "name", e.target.value)}
+                          className="bg-white/90 border-white/50"
                         />
                       </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
-                        Eliminar
-                      </Button>
-                    </div>
-
-                    <div className="grid gap-4 grid-cols-2">
-                      <div className="grid gap-2">
-                        <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
-                        <SmartNumberInput
-                          value={exercise.sets || ""}
-                          onChange={(val) => updateExercise(index, "sets", val)}
-                          placeholder="Ej: 3"
-                          suggestions={[3, 4, 5]}
-                        />
+                      <div className="flex gap-2">
+                        {MARKER_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => updateExercise(index, "marker_color", color)}
+                            className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                            style={{ 
+                              backgroundColor: color,
+                              borderColor: exercise.marker_color === color ? "white" : "transparent"
+                            }}
+                            title={color}
+                          />
+                        ))}
                       </div>
-
-                      <div className="grid gap-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor={`exercise-reps-${index}`}>
-                            {exercise.metric_type === "time" ? "Tiempo" : "Repeticiones"}
-                          </Label>
-                          <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
-                            <button
-                              type="button"
-                              onClick={() => toggleMetricType(index)}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
-                                exercise.metric_type !== "time"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:text-foreground"
-                              )}
-                            >
-                              Repeticiones
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleMetricType(index)}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
-                                exercise.metric_type === "time"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:text-foreground"
-                              )}
-                            >
-                              Tiempo
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <SmartNumberInput
-                              value={exercise.reps || ""}
-                              onChange={(val) => updateExercise(index, "reps", val)}
-                              placeholder={exercise.metric_type === "time" ? "Ej: 40" : "Ej: 10"}
-                              suggestions={exercise.metric_type === "time" ? [30, 40, 60, 90] : [8, 10, 12, 15]}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 grid gap-2">
+                            <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
+                            <ExerciseAutosuggest
+                              value={exercise.name}
+                              onChange={(val) => updateExercise(index, "name", val)}
+                              onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
+                              catalog={exerciseCatalog}
                             />
                           </div>
-                          {exercise.metric_type === "time" && (
-                            <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 self-start">
-                              <button
-                                type="button"
-                                onClick={() => toggleTimeUnit(index)}
-                                className={cn(
-                                  "px-2 py-1 rounded-full text-xs font-medium transition-colors",
-                                  exercise.time_unit !== "minutes"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:text-foreground"
-                                )}
-                              >
-                                seg (″)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => toggleTimeUnit(index)}
-                                className={cn(
-                                  "px-2 py-1 rounded-full text-xs font-medium transition-colors",
-                                  exercise.time_unit === "minutes"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:text-foreground"
-                                )}
-                              >
-                                min (′)
-                              </button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
+                            Eliminar
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-4 grid-cols-2">
+                          <div className="grid gap-2">
+                            <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
+                            <SmartNumberInput
+                              value={exercise.sets || ""}
+                              onChange={(val) => updateExercise(index, "sets", val)}
+                              placeholder="Ej: 3"
+                              suggestions={[3, 4, 5]}
+                            />
+                          </div>
+
+                          <div className="grid gap-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`exercise-reps-${index}`}>
+                                {exercise.metric_type === "time" ? "Tiempo" : "Repeticiones"}
+                              </Label>
+                              <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleMetricType(index)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                                    exercise.metric_type !== "time"
+                                      ? "bg-primary text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Repeticiones
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleMetricType(index)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                                    exercise.metric_type === "time"
+                                      ? "bg-primary text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Tiempo
+                                </button>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <SmartNumberInput
+                                  value={exercise.reps || ""}
+                                  onChange={(val) => updateExercise(index, "reps", val)}
+                                  placeholder={exercise.metric_type === "time" ? "Ej: 40" : "Ej: 10"}
+                                  suggestions={exercise.metric_type === "time" ? [30, 40, 60, 90] : [8, 10, 12, 15]}
+                                />
+                              </div>
+                              {exercise.metric_type === "time" && (
+                                <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 self-start">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTimeUnit(index)}
+                                    className={cn(
+                                      "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                                      exercise.time_unit !== "minutes"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                  >
+                                    seg (″)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTimeUnit(index)}
+                                    className={cn(
+                                      "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                                      exercise.time_unit === "minutes"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                  >
+                                    min (′)
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                      <div className="grid gap-2">
-                        <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
-                        <div className="relative">
+                          <div className="grid gap-2">
+                            <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
+                            <div className="relative">
+                              <Input
+                                id={`exercise-weight-${index}`}
+                                placeholder="Ej: 20"
+                                value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                                onChange={(e) => updateExercise(index, "weight", e.target.value)}
+                                className="pr-8"
+                                type="number"
+                                step="0.5"
+                              />
+                              <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-2">
+                            <Label htmlFor={`exercise-duration-${index}`}>Descanso / Pausa</Label>
+                            <Input
+                              id={`exercise-duration-${index}`}
+                              placeholder="Ej: 60 seg"
+                              value={exercise.duration}
+                              onChange={(e) => updateExercise(index, "duration", e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
                           <Input
-                            id={`exercise-weight-${index}`}
-                            placeholder="Ej: 20"
-                            value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
-                            onChange={(e) => updateExercise(index, "weight", e.target.value)}
-                            className="pr-8"
-                            type="number"
-                            step="0.5"
+                            id={`exercise-video-${index}`}
+                            placeholder="Ej: https://youtu.be/..."
+                            value={exercise.video_url || ""}
+                            onChange={(e) => updateExercise(index, "video_url", e.target.value)}
                           />
-                          <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor={`exercise-notes-${index}`}>Notas</Label>
+                          <Textarea
+                            id={`exercise-notes-${index}`}
+                            placeholder="Instrucciones adicionales..."
+                            value={exercise.notes}
+                            onChange={(e) => updateExercise(index, "notes", e.target.value)}
+                            rows={2}
+                          />
                         </div>
                       </div>
-
-                      <div className="grid gap-2">
-                        <Label htmlFor={`exercise-duration-${index}`}>Descanso / Pausa</Label>
-                        <Input
-                          id={`exercise-duration-${index}`}
-                          placeholder="Ej: 60 seg"
-                          value={exercise.duration}
-                          onChange={(e) => updateExercise(index, "duration", e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
-                      <Input
-                        id={`exercise-video-${index}`}
-                        placeholder="Ej: https://youtu.be/..."
-                        value={exercise.video_url || ""}
-                        onChange={(e) => updateExercise(index, "video_url", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor={`exercise-notes-${index}`}>Notas</Label>
-                      <Textarea
-                        id={`exercise-notes-${index}`}
-                        placeholder="Instrucciones adicionales..."
-                        value={exercise.notes}
-                        onChange={(e) => updateExercise(index, "notes", e.target.value)}
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             ))}
           </div>
 

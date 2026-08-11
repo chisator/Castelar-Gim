@@ -14,6 +14,8 @@ interface Exercise {
   video_url?: string
   metric_type?: "reps" | "time"
   time_unit?: "seconds" | "minutes"
+  type?: "exercise" | "marker"
+  marker_color?: string
 }
 
 function normalizeToNoonUTC(dateStr: string): string | null {
@@ -267,7 +269,7 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
     if (format === "csv") {
       // Exportar solo ejercicios en CSV con encabezados
       let csv = "name,sets,reps,weight,rest,notes\n"
-      exercises.forEach((ex: Exercise) => {
+      exercises.filter(ex => ex.type !== "marker").forEach((ex: Exercise) => {
         const weight = ex.weight || ""
         const rest = ex.duration || ""
         const notes = (ex.notes || "").replace(/"/g, '""') // Escapar comillas

@@ -42,6 +42,8 @@ interface Exercise {
   catalog_id?: string
   metric_type?: "reps" | "time"
   time_unit?: "seconds" | "minutes"
+  type?: "exercise" | "marker"
+  marker_color?: string
 }
 
 interface Athlete {
@@ -86,8 +88,22 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
+  const MARKER_COLORS = [
+    "#FF6B00", // Naranja
+    "#3B82F6", // Azul
+    "#22C55E", // Verde
+    "#EF4444", // Rojo
+    "#A855F7", // Morado
+    "#6B7280", // Gris
+    "#EAB308", // Amarillo
+  ]
+
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }])
+  }
+
+  const addMarker = () => {
+    setExercises([...exercises, { name: "", type: "marker", marker_color: MARKER_COLORS[0] }])
   }
 
   const removeExercise = (index: number) => {
@@ -391,202 +407,261 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {exercises.length === 0 && (
+            <Button type="button" variant="outline" onClick={addMarker} className="w-full border-dashed mb-4">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Marca de Día
+            </Button>
+          )}
           {exercises.map((exercise, index) => (
-            <div key={index} className="border rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Ejercicio {index + 1}</h4>
-                {exercises.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
-                    Eliminar
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
-                  <ExerciseAutosuggest
-                    value={exercise.name}
-                    onChange={(val) => updateExercise(index, "name", val)}
-                    onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
-                    catalog={exerciseCatalog}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
-                    <SmartNumberInput
-                      value={exercise.sets || ""}
-                      onChange={(val) => updateExercise(index, "sets", val)}
-                      placeholder="Ej: 3"
-                      suggestions={[3, 4, 5]}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor={`exercise-reps-${index}`}>
-                        {exercise.metric_type === "time" ? "Tiempo" : "Repeticiones"}
-                      </Label>
-                      <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleMetricType(index)}
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
-                            exercise.metric_type !== "time"
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          Repeticiones
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleMetricType(index)}
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
-                            exercise.metric_type === "time"
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          Tiempo
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <SmartNumberInput
-                          value={exercise.reps || ""}
-                          onChange={(val) => updateExercise(index, "reps", val)}
-                          placeholder={exercise.metric_type === "time" ? "Ej: 40" : "Ej: 10"}
-                          suggestions={exercise.metric_type === "time" ? [30, 40, 60, 90] : [8, 10, 12, 15]}
-                        />
-                      </div>
-                      {exercise.metric_type === "time" && (
-                        <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 self-start">
-                          <button
-                            type="button"
-                            onClick={() => toggleTimeUnit(index)}
-                            className={cn(
-                              "px-2 py-1 rounded-full text-xs font-medium transition-colors",
-                              exercise.time_unit !== "minutes"
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            seg (″)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleTimeUnit(index)}
-                            className={cn(
-                              "px-2 py-1 rounded-full text-xs font-medium transition-colors",
-                              exercise.time_unit === "minutes"
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            min (′)
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
-                    <div className="flex gap-1">
-                      <div className="relative flex-1">
-                        <Input
-                          id={`exercise-weight-${index}`}
-                          placeholder="Ej: 20"
-                          value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
-                          onChange={(e) => updateExercise(index, "weight", e.target.value)}
-                          className="pr-8"
-                          type="number"
-                          step="0.5"
-                        />
-                        <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
-                      </div>
-                      <Popover open={openPercentIndex === index} onOpenChange={(open) => setOpenPercentIndex(open ? index : null)}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="shrink-0 h-10 w-10 relative"
-                            title="Calcular % del 1RM"
-                          >
-                            {loadingPRIndex === index ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Percent className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-28" align="end">
-                          <div className="py-1 px-1">
-                            <p className="text-xs text-muted-foreground text-center py-1 font-medium border-b mb-1">% del 1RM</p>
-                            <div className="overflow-y-auto max-h-48 flex flex-col gap-0.5">
-                              {PERCENTAGES.map((pct) => (
-                                <button
-                                  key={pct}
-                                  type="button"
-                                  onClick={() => handleApplyPercentage(index, pct)}
-                                  className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted transition-colors"
-                                >
-                                  {pct}%
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    {prNotFoundIndex === index && (
-                      <p className="text-xs text-amber-600">No hay PR registrado para este ejercicio.</p>
+            <div key={index}>
+              {exercise.type === "marker" ? (
+                <div 
+                  className="rounded-lg p-4 space-y-3 border-2"
+                  style={{ 
+                    backgroundColor: exercise.marker_color || MARKER_COLORS[0],
+                    borderColor: exercise.marker_color || MARKER_COLORS[0],
+                    opacity: 0.9
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-white">Marca / División</h4>
+                    {exercises.length > 1 && (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)} className="text-white hover:text-white hover:bg-white/20">
+                        Eliminar
+                      </Button>
                     )}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor={`exercise-duration-${index}`}>Descanso / Pausa</Label>
+                    <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: "Día 1 - Piernas 🔥")</Label>
                     <Input
-                      id={`exercise-duration-${index}`}
-                      placeholder="Ej: 60 seg"
-                      value={exercise.duration}
-                      onChange={(e) => updateExercise(index, "duration", e.target.value)}
+                      id={`marker-name-${index}`}
+                      placeholder="Ej: Día 1 - Piernas"
+                      value={exercise.name}
+                      onChange={(e) => updateExercise(index, "name", e.target.value)}
+                      className="bg-white/90 border-white/50"
                     />
                   </div>
+                  <div className="flex gap-2">
+                    {MARKER_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => updateExercise(index, "marker_color", color)}
+                        className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                        style={{ 
+                          backgroundColor: color,
+                          borderColor: exercise.marker_color === color ? "white" : "transparent"
+                        }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
                 </div>
+              ) : (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Ejercicio {index + 1}</h4>
+                    {exercises.length > 1 && (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
+                        Eliminar
+                      </Button>
+                    )}
+                  </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
-                  <Input
-                    id={`exercise-video-${index}`}
-                    placeholder="Ej: https://youtu.be/..."
-                    value={exercise.video_url || ""}
-                    onChange={(e) => updateExercise(index, "video_url", e.target.value)}
-                  />
-                </div>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
+                      <ExerciseAutosuggest
+                        value={exercise.name}
+                        onChange={(val) => updateExercise(index, "name", val)}
+                        onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
+                        catalog={exerciseCatalog}
+                      />
+                    </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor={`exercise-notes-${index}`}>Notas</Label>
-                  <Textarea
-                    id={`exercise-notes-${index}`}
-                    placeholder="Instrucciones adicionales..."
-                    value={exercise.notes}
-                    onChange={(e) => updateExercise(index, "notes", e.target.value)}
-                    rows={2}
-                  />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
+                        <SmartNumberInput
+                          value={exercise.sets || ""}
+                          onChange={(val) => updateExercise(index, "sets", val)}
+                          placeholder="Ej: 3"
+                          suggestions={[3, 4, 5]}
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`exercise-reps-${index}`}>
+                            {exercise.metric_type === "time" ? "Tiempo" : "Repeticiones"}
+                          </Label>
+                          <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleMetricType(index)}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                                exercise.metric_type !== "time"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              Repeticiones
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleMetricType(index)}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                                exercise.metric_type === "time"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              Tiempo
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <SmartNumberInput
+                              value={exercise.reps || ""}
+                              onChange={(val) => updateExercise(index, "reps", val)}
+                              placeholder={exercise.metric_type === "time" ? "Ej: 40" : "Ej: 10"}
+                              suggestions={exercise.metric_type === "time" ? [30, 40, 60, 90] : [8, 10, 12, 15]}
+                            />
+                          </div>
+                          {exercise.metric_type === "time" && (
+                            <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 self-start">
+                              <button
+                                type="button"
+                                onClick={() => toggleTimeUnit(index)}
+                                className={cn(
+                                  "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                                  exercise.time_unit !== "minutes"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                seg (″)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleTimeUnit(index)}
+                                className={cn(
+                                  "px-2 py-1 rounded-full text-xs font-medium transition-colors",
+                                  exercise.time_unit === "minutes"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                min (′)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
+                        <div className="flex gap-1">
+                          <div className="relative flex-1">
+                            <Input
+                              id={`exercise-weight-${index}`}
+                              placeholder="Ej: 20"
+                              value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                              onChange={(e) => updateExercise(index, "weight", e.target.value)}
+                              className="pr-8"
+                              type="number"
+                              step="0.5"
+                            />
+                            <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                          </div>
+                          <Popover open={openPercentIndex === index} onOpenChange={(open) => setOpenPercentIndex(open ? index : null)}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="shrink-0 h-10 w-10 relative"
+                                title="Calcular % del 1RM"
+                              >
+                                {loadingPRIndex === index ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Percent className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 w-28" align="end">
+                              <div className="py-1 px-1">
+                                <p className="text-xs text-muted-foreground text-center py-1 font-medium border-b mb-1">% del 1RM</p>
+                                <div className="overflow-y-auto max-h-48 flex flex-col gap-0.5">
+                                  {PERCENTAGES.map((pct) => (
+                                    <button
+                                      key={pct}
+                                      type="button"
+                                      onClick={() => handleApplyPercentage(index, pct)}
+                                      className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted transition-colors"
+                                    >
+                                      {pct}%
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        {prNotFoundIndex === index && (
+                          <p className="text-xs text-amber-600">No hay PR registrado para este ejercicio.</p>
+                        )}
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`exercise-duration-${index}`}>Descanso / Pausa</Label>
+                        <Input
+                          id={`exercise-duration-${index}`}
+                          placeholder="Ej: 60 seg"
+                          value={exercise.duration}
+                          onChange={(e) => updateExercise(index, "duration", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
+                      <Input
+                        id={`exercise-video-${index}`}
+                        placeholder="Ej: https://youtu.be/..."
+                        value={exercise.video_url || ""}
+                        onChange={(e) => updateExercise(index, "video_url", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor={`exercise-notes-${index}`}>Notas</Label>
+                      <Textarea
+                        id={`exercise-notes-${index}`}
+                        placeholder="Instrucciones adicionales..."
+                        value={exercise.notes}
+                        onChange={(e) => updateExercise(index, "notes", e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
-          <Button type="button" variant="outline" onClick={addExercise} className="w-full border-dashed">
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Ejercicio
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={addExercise} className="flex-1 border-dashed">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Ejercicio
+            </Button>
+            <Button type="button" variant="outline" onClick={addMarker} className="flex-1 border-dashed">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Marca
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -17,6 +17,8 @@ interface Exercise {
   video_url?: string
   metric_type?: "reps" | "time"
   time_unit?: "seconds" | "minutes"
+  type?: "exercise" | "marker"
+  marker_color?: string
 }
 
 interface Routine {
@@ -40,6 +42,18 @@ interface Attendance {
 // Helper component for individual exercise items with video toggle
 function ExerciseItem({ exercise }: { exercise: Exercise }) {
   const [showVideo, setShowVideo] = useState(false)
+
+  // Marker/Divider rendering
+  if (exercise.type === "marker") {
+    return (
+      <li 
+        className="text-sm p-3 rounded-md text-center font-bold text-white"
+        style={{ backgroundColor: exercise.marker_color || "#FF6B00" }}
+      >
+        {exercise.name}
+      </li>
+    )
+  }
 
   const getYouTubeId = (url: string) => {
     if (!url) return null
