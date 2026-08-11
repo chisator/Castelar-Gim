@@ -11,6 +11,13 @@ import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
 import { ExportImportDialog } from "@/components/export-import-dialog"
 
+interface SetDetail {
+  reps?: string
+  time?: string
+  weight?: string
+  rest?: string
+}
+
 interface Exercise {
   name: string
   sets?: string
@@ -23,6 +30,8 @@ interface Exercise {
   time_unit?: "seconds" | "minutes"
   type?: "exercise" | "marker"
   marker_color?: string
+  sets_detailed?: boolean
+  sets_detail?: SetDetail[]
 }
 
 interface Routine {
@@ -70,20 +79,39 @@ function ExerciseItem({ exercise }: { exercise: Exercise }) {
   return (
     <li className="text-sm bg-muted p-3 rounded-md">
       <p className="font-medium text-base">{exercise.name}</p>
-      <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
-        {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
-        {exercise.reps && (
-          <p className="text-muted-foreground">
-            {exercise.metric_type === "time" ? "Tiempo: " : "Reps: "}
-            <span className="text-foreground">
-              {exercise.reps}
-              {exercise.metric_type === "time" && (exercise.time_unit === "minutes" ? "'" : "\"")}
-            </span>
-          </p>
-        )}
-        {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!exercise.weight.toLowerCase().includes("kg") && " kg"}</span></p>}
-        {exercise.duration && <p className="text-muted-foreground">Descanso: <span className="text-foreground">{exercise.duration}</span></p>}
-      </div>
+      {exercise.sets_detail && exercise.sets_detail.length > 0 ? (
+        <div className="mt-2 space-y-1">
+          {exercise.sets_detail.map((set, setIndex) => (
+            <div key={setIndex} className="flex items-center gap-2 text-xs sm:text-sm">
+              <span className="text-muted-foreground font-medium w-4">{setIndex + 1}.</span>
+              <span className="text-foreground">
+                {exercise.metric_type === "time"
+                  ? `${set.time || "-"}${exercise.time_unit === "minutes" ? "'" : "\""}`
+                  : `${set.reps || "-"} reps`}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-foreground">{set.weight ? `${set.weight} kg` : "-"}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{set.rest || "-"}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
+          {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
+          {exercise.reps && (
+            <p className="text-muted-foreground">
+              {exercise.metric_type === "time" ? "Tiempo: " : "Reps: "}
+              <span className="text-foreground">
+                {exercise.reps}
+                {exercise.metric_type === "time" && (exercise.time_unit === "minutes" ? "'" : "\"")}
+              </span>
+            </p>
+          )}
+          {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!exercise.weight.toLowerCase().includes("kg") && " kg"}</span></p>}
+          {exercise.duration && <p className="text-muted-foreground">Descanso: <span className="text-foreground">{exercise.duration}</span></p>}
+        </div>
+      )}
 
       {videoId && (
         <div className="mt-3">

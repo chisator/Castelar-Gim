@@ -4,6 +4,13 @@ import { createClient as createServerClient } from "@/lib/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 
+interface SetDetail {
+  reps?: string
+  time?: string
+  weight?: string
+  rest?: string
+}
+
 interface Exercise {
   name: string
   sets?: string
@@ -16,6 +23,8 @@ interface Exercise {
   time_unit?: "seconds" | "minutes"
   type?: "exercise" | "marker"
   marker_color?: string
+  sets_detailed?: boolean
+  sets_detail?: SetDetail[]
 }
 
 function normalizeToNoonUTC(dateStr: string): string | null {

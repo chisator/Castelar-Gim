@@ -104,12 +104,28 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {exercises.filter((ex): ex is { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes"; type?: "exercise" | "marker"; marker_color?: string } => typeof ex === 'object' && ex !== null && 'name' in ex).map((ex, eIdx: number) => (
+                        {exercises.filter((ex): ex is { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes"; type?: "exercise" | "marker"; marker_color?: string; sets_detailed?: boolean; sets_detail?: { reps?: string; time?: string; weight?: string; rest?: string }[] } => typeof ex === 'object' && ex !== null && 'name' in ex).map((ex, eIdx: number) => (
                           ex.type === "marker" ? (
                             <tr key={eIdx} style={{ backgroundColor: ex.marker_color || "#FF6B00" }}>
                               <td colSpan={6} className="p-3 border border-gray-300 text-center font-bold text-white">
                                 {ex.name}
                               </td>
+                            </tr>
+                          ) : ex.sets_detail && ex.sets_detail.length > 0 ? (
+                            <tr key={eIdx} className="border-b border-gray-200 bg-white">
+                              <td className="p-2 border border-gray-300 font-medium text-black">{ex.name}</td>
+                              <td className="p-2 border border-gray-300 text-black" colSpan={4}>
+                                {ex.sets_detail.map((set, sIdx) => (
+                                  <div key={sIdx} className="text-sm">
+                                    {sIdx + 1}. {ex.metric_type === "time"
+                                      ? `${set.time || "-"}${ex.time_unit === "minutes" ? "'" : "\""}`
+                                      : `${set.reps || "-"} reps`}
+                                    {" "}· {set.weight ? `${set.weight} kg` : "-"}
+                                    {" "}· {set.rest || "-"}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="p-2 border border-gray-300 text-xs italic text-black">{ex.notes || "-"}</td>
                             </tr>
                           ) : (
                             <tr key={eIdx} className="border-b border-gray-200 bg-white">

@@ -26,10 +26,18 @@ interface LogEntry {
     order: number
 }
 
+interface SetDetail {
+    reps?: string
+    time?: string
+    weight?: string
+    rest?: string
+}
+
 interface RoutineExercise {
     name: string
     metric_type?: "reps" | "time"
     time_unit?: "seconds" | "minutes"
+    sets_detail?: SetDetail[]
 }
 
 interface ExistingLogEntry {
@@ -72,15 +80,25 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
             }))
         } else {
             // New log: map from routine exercises
-            return initialExercises.map((ex, index) => ({
-                exercise_name: ex.name,
-                sets_data: [{
-                    weight: "",
-                    ...(ex.metric_type === "time" ? { time: "", metric_type: "time" } : { reps: "" })
-                }], // Start with 1 empty set
-                notes: "",
-                order: index
-            }))
+            return initialExercises.map((ex, index) => {
+                const hasSetsDetail = ex.sets_detail && ex.sets_detail.length > 0
+                return {
+                    exercise_name: ex.name,
+                    sets_data: hasSetsDetail
+                        ? ex.sets_detail!.map(s => ({
+                            weight: s.weight || "",
+                            ...(ex.metric_type === "time"
+                                ? { time: s.time || "", metric_type: "time" }
+                                : { reps: s.reps || "" })
+                        }))
+                        : [{
+                            weight: "",
+                            ...(ex.metric_type === "time" ? { time: "", metric_type: "time" } : { reps: "" })
+                        }],
+                    notes: "",
+                    order: index
+                }
+            })
         }
     })
 
