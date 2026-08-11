@@ -84,18 +84,21 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([""])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds" }])
+  const [exercises, setExercises] = useState<Exercise[]>([
+    { name: "", type: "marker", marker_color: "#FF6B00" },
+    { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }
+  ])
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const MARKER_COLORS = [
     "#FF6B00", // Naranja
-    "#3B82F6", // Azul
-    "#22C55E", // Verde
-    "#EF4444", // Rojo
-    "#A855F7", // Morado
-    "#6B7280", // Gris
-    "#EAB308", // Amarillo
+    "#60A5FA", // Azul pastel
+    "#34D399", // Verde esmeralda pastel
+    "#F87171", // Rojo coral pastel
+    "#A78BFA", // Violeta pastel
+    "#9CA3AF", // Gris suave
+    "#FCD34D", // Ámbar pastel
   ]
 
   const addExercise = () => {
@@ -461,7 +464,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
               ) : (
                 <div className="border rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Ejercicio {index + 1}</h4>
+                    <h4 className="font-semibold">Ejercicio {exercises.filter((ex, i) => i < index && ex.type !== "marker").length + 1}</h4>
                     {exercises.length > 1 && (
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
                         Eliminar

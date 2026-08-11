@@ -85,12 +85,12 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
 
   const MARKER_COLORS = [
     "#FF6B00", // Naranja
-    "#3B82F6", // Azul
-    "#22C55E", // Verde
-    "#EF4444", // Rojo
-    "#A855F7", // Morado
-    "#6B7280", // Gris
-    "#EAB308", // Amarillo
+    "#60A5FA", // Azul pastel
+    "#34D399", // Verde esmeralda pastel
+    "#F87171", // Rojo coral pastel
+    "#A78BFA", // Violeta pastel
+    "#9CA3AF", // Gris suave
+    "#FCD34D", // Ámbar pastel
   ]
 
   const addExercise = () => {
