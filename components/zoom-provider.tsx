@@ -20,8 +20,8 @@ const ZOOM_LABELS: Record<ZoomLevel, string> = {
 
 const ZOOM_FONT_SIZES: Record<ZoomLevel, string> = {
   normal: "16px",
-  large: "18.4px",
-  xlarge: "20.8px",
+  large: "19.2px",
+  xlarge: "22.4px",
 }
 
 const STORAGE_KEY = "castelar-zoom"
