@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
-import { Check, ChevronsUpDown, Plus, Percent, Loader2, X } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, Percent, Loader2, X, GripVertical, ArrowUp, ArrowDown } from "lucide-react"
+import { Reorder, useDragControls } from "framer-motion"
 import { cn } from "@/lib/utils"
 import {
   Command,
@@ -31,6 +32,7 @@ import {
 import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
 import { SmartNumberInput } from "@/components/smart-number-input"
 import { ExerciseSetEditor } from "@/components/exercise-set-editor"
+import { ReorderableCard } from "@/components/reorderable-card"
 
 interface SetDetail {
   reps?: string
@@ -40,6 +42,7 @@ interface SetDetail {
 }
 
 interface Exercise {
+  id?: string
   name: string
   sets?: string
   reps?: string
@@ -94,9 +97,11 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([""])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const generateId = () => crypto.randomUUID()
+
   const [exercises, setExercises] = useState<Exercise[]>([
-    { name: "", type: "marker", marker_color: "#FF6B00" },
-    { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }
+    { id: generateId(), name: "", type: "marker", marker_color: "#FF6B00" },
+    { id: generateId(), name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }
   ])
 
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
@@ -112,15 +117,33 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   ]
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }])
+    setExercises([...exercises, { id: generateId(), name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "", catalog_id: "", metric_type: "reps", time_unit: "seconds", type: "exercise" }])
   }
 
   const addMarker = () => {
-    setExercises([...exercises, { name: "", type: "marker", marker_color: MARKER_COLORS[0] }])
+    setExercises([...exercises, { id: generateId(), name: "", type: "marker", marker_color: MARKER_COLORS[0] }])
   }
 
   const removeExercise = (index: number) => {
     setExercises(exercises.filter((_, i) => i !== index))
+  }
+
+  const moveExerciseUp = (index: number) => {
+    if (index === 0) return
+    const newExercises = [...exercises]
+    const temp = newExercises[index]
+    newExercises[index] = newExercises[index - 1]
+    newExercises[index - 1] = temp
+    setExercises(newExercises)
+  }
+
+  const moveExerciseDown = (index: number) => {
+    if (index === exercises.length - 1) return
+    const newExercises = [...exercises]
+    const temp = newExercises[index]
+    newExercises[index] = newExercises[index + 1]
+    newExercises[index + 1] = temp
+    setExercises(newExercises)
   }
 
   const updateExercise = (index: number, field: keyof Exercise, value: string) => {
@@ -424,62 +447,49 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
               Agregar Marca de Día
             </Button>
           )}
-          {exercises.map((exercise, index) => (
-            <div key={index}>
-              {exercise.type === "marker" ? (
-                <div 
-                  className="rounded-lg p-4 space-y-3 border-2"
-                  style={{ 
-                    backgroundColor: exercise.marker_color || MARKER_COLORS[0],
-                    borderColor: exercise.marker_color || MARKER_COLORS[0],
-                    opacity: 0.9
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-white">Marca / División</h4>
-                    {exercises.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)} className="text-white hover:text-white hover:bg-white/20">
-                        Eliminar
-                      </Button>
-                    )}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: "Día 1 - Piernas 🔥")</Label>
-                    <Input
-                      id={`marker-name-${index}`}
-                      placeholder="Ej: Día 1 - Piernas"
-                      value={exercise.name}
-                      onChange={(e) => updateExercise(index, "name", e.target.value)}
-                      className="bg-white/90 border-white/50"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    {MARKER_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => updateExercise(index, "marker_color", color)}
-                        className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                        style={{ 
-                          backgroundColor: color,
-                          borderColor: exercise.marker_color === color ? "white" : "transparent"
-                        }}
-                        title={color}
+          <Reorder.Group axis="y" values={exercises} onReorder={setExercises} className="space-y-4">
+            {exercises.map((exercise, index) => (
+              <ReorderableCard
+                key={exercise.id}
+                value={exercise}
+                index={index}
+                total={exercises.length}
+                onMoveUp={moveExerciseUp}
+                onMoveDown={moveExerciseDown}
+                onRemove={removeExercise}
+                title={exercise.type === "marker" ? "Marca / División" : `Ejercicio ${exercises.filter((ex, i) => i < index && ex.type !== "marker").length + 1}`}
+                isMarker={exercise.type === "marker"}
+                markerColor={exercise.marker_color}
+              >
+                {exercise.type === "marker" ? (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: "Día 1 - Piernas 🔥")</Label>
+                      <Input
+                        id={`marker-name-${index}`}
+                        placeholder="Ej: Día 1 - Piernas"
+                        value={exercise.name}
+                        onChange={(e) => updateExercise(index, "name", e.target.value)}
+                        className="bg-white/90 border-white/50"
                       />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Ejercicio {exercises.filter((ex, i) => i < index && ex.type !== "marker").length + 1}</h4>
-                    {exercises.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
-                        Eliminar
-                      </Button>
-                    )}
-                  </div>
-
+                    </div>
+                    <div className="flex gap-2">
+                      {MARKER_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => updateExercise(index, "marker_color", color)}
+                          className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                          style={{
+                            backgroundColor: color,
+                            borderColor: exercise.marker_color === color ? "white" : "transparent"
+                          }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : (
                   <div className="grid gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
@@ -521,10 +531,10 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                       />
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </ReorderableCard>
+            ))}
+          </Reorder.Group>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={addExercise} className="flex-1 border-dashed">
               <Plus className="mr-2 h-4 w-4" />
