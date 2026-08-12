@@ -12,6 +12,9 @@ import { TrainerCreatorFilter } from "@/components/trainer-creator-filter"
 import { Logo } from "@/components/logo"
 import { ExportPdfButton } from "@/components/export-pdf-button"
 import { CreateUserDialog } from "@/components/create-user-dialog"
+import { TrainerUsersTable } from "@/components/trainer-users-table"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ChevronDown, ChevronUp, Users } from "lucide-react"
 
 interface PageRoutine {
   id: string
@@ -62,6 +65,14 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
     .order("created_at", { ascending: false })
 
   const assignedUserIds = assignments?.map((a) => a.user_id) || []
+
+  // Obtener perfiles de deportistas ASIGNADOS a este entrenador
+  const { data: assignedAthletes } = await supabaseAdmin
+    .from("profiles")
+    .select("id, full_name, email, telefono")
+    .in("id", assignedUserIds.length > 0 ? assignedUserIds : ["no-ids"])
+    .eq("role", "deportista")
+    .order("full_name")
 
   // Obtener TODOS los perfiles de deportistas para que el entrenador pueda ver/filtrar a cualquiera
   const { data: athletes } = await supabaseAdmin
@@ -333,6 +344,22 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
             </CardContent>
           </Card>
         </div>
+
+        {/* Sección de deportistas asignados */}
+        <Collapsible className="mb-8" defaultOpen>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="font-semibold">Mis Deportistas ({totalAssignedUsers})</span>
+              </div>
+              <ChevronDown className="h-4 w-4 collapsible-chevron" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
+            <TrainerUsersTable users={assignedAthletes || []} />
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="space-y-8">
           <div>

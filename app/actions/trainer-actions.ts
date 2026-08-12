@@ -374,3 +374,106 @@ export async function importRoutine(formData: {
     return { error: error instanceof Error ? error.message : "Error al importar rutina" }
   }
 }
+
+export async function updateAssignedUser(formData: {
+  userId: string
+  email: string
+  fullName: string
+  telefono?: string
+  password?: string
+}) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { error: "No autenticado" }
+    }
+
+    const userRole = user.user_metadata?.role
+
+    // Solo entrenadores o administradores pueden ejecutar esta acción
+    if (userRole !== "administrador" && userRole !== "entrenador") {
+      return { error: "No tienes permisos para actualizar usuarios" }
+    }
+
+    // Verificar que el usuario a editar exista y sea deportista
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", formData.userId)
+      .single()
+
+    if (!targetProfile) {
+      return { error: "Usuario no encontrado" }
+    }
+
+    if (targetProfile.role !== "deportista") {
+      return { error: "Solo puedes editar deportistas" }
+    }
+
+    // Si es entrenador, verificar que el usuario esté asignado a él
+    if (userRole === "entrenador") {
+      const { data: assignment } = await supabaseAdmin
+        .from("trainer_user_assignments")
+        .select("id")
+        .eq("trainer_id", user.id)
+        .eq("user_id", formData.userId)
+        .single()
+
+      if (!assignment) {
+        return { error: "Este deportista no está asignado a ti" }
+      }
+    }
+
+    // Preparar datos de actualización de auth
+    const updateData: Record<string, unknown> = {
+      email: formData.email,
+      user_metadata: {
+        full_name: formData.fullName,
+        role: "deportista",
+      },
+    }
+
+    if (formData.password) {
+      if (formData.password.length < 6) {
+        return { error: "La contraseña debe tener al menos 6 caracteres" }
+      }
+      updateData.password = formData.password
+    }
+
+    // Actualizar usuario en auth
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(formData.userId, updateData)
+
+    if (updateError) {
+      return { error: updateError.message }
+    }
+
+    // Actualizar perfil
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        email: formData.email,
+        full_name: formData.fullName,
+        telefono: formData.telefono || null,
+      })
+      .eq("id", formData.userId)
+
+    if (profileError) {
+      return { error: profileError.message }
+    }
+
+    revalidatePath("/entrenador")
+    return { success: true }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Error al actualizar usuario" }
+  }
+}
