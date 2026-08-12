@@ -37,6 +37,7 @@ export const viewport: Viewport = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { ZoomProvider } from "@/components/zoom-provider";
 
 
 
@@ -58,23 +59,25 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {/* Capas de Fondo */}
-          <div className="fixed inset-0 pointer-events-none bg-background" style={{ zIndex: 0 }} />
-          <div className="fixed inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 1, opacity: 0.25 }}>
-            <Image src="/Layer1000.svg" alt="Background Logo" width={800} height={800} className="object-contain" priority />
-          </div>
-          
-          {/* Contenido Principal */}
-          <div className="relative flex flex-col min-h-screen" style={{ zIndex: 10 }}>
-            <ServiceWorkerUpdater />
-            <GlobalNotification notification={notification || null} />
-            <div className="flex-1 pb-16 md:pb-0">
-              {children}
+          <ZoomProvider>
+            {/* Capas de Fondo */}
+            <div className="fixed inset-0 pointer-events-none bg-background" style={{ zIndex: 0 }} />
+            <div className="fixed inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 1, opacity: 0.25 }}>
+              <Image src="/Layer1000.svg" alt="Background Logo" width={800} height={800} className="object-contain" priority />
             </div>
-            <Toaster />
-            <BottomNav />
-          </div>
-          <SplashOverlay />
+            
+            {/* Contenido Principal */}
+            <div className="relative flex flex-col min-h-screen" style={{ zIndex: 10 }}>
+              <ServiceWorkerUpdater />
+              <GlobalNotification notification={notification || null} />
+              <div className="flex-1 pb-16 md:pb-0">
+                {children}
+              </div>
+              <Toaster />
+              <BottomNav />
+            </div>
+            <SplashOverlay />
+          </ZoomProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { Menu } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ZoomToggle } from "@/components/zoom-toggle"
 import { Separator } from "@/components/ui/separator"
 
 export function MobileMenu() {
@@ -38,6 +39,7 @@ export function MobileMenu() {
                     
                     <div className="mt-auto pt-4 p-2 flex flex-col gap-4">
                         <ThemeToggle />
+                        <ZoomToggle />
                         <LogoutButton className="w-full justify-center" />
                     </div>
                 </div>
