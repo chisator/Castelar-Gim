@@ -42,30 +42,33 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
 
       {/* Visually hidden but mounted for react-to-print to clone */}
       <div className="hidden">
-        <div 
-          ref={printRef} 
-          className="p-8 bg-white text-black w-[800px] mx-auto"
-          style={{ 
+        <div
+          ref={printRef}
+          className="bg-white text-black w-full"
+          style={{
             fontFamily: "sans-serif",
-            WebkitPrintColorAdjust: "exact", 
-            printColorAdjust: "exact" 
+            WebkitPrintColorAdjust: "exact",
+            printColorAdjust: "exact",
+            maxWidth: "210mm",
+            padding: "15mm",
+            boxSizing: "border-box",
           }}
         >
           <style type="text/css">
-            {`@page { size: A4 portrait; margin: 10mm; }`}
+            {`@page { size: A4 portrait; margin: 15mm; }`}
           </style>
 
           {/* Header */}
           <div className="flex justify-between items-center border-b-2 border-[#FF6B00] pb-4 mb-6">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-[#0ea5e9]">Castelar Gimnasio</h1>
-                <p className="text-lg text-gray-700 mt-1">Plan de Entrenamiento</p>
+                <h1 className="text-[32px] font-bold text-[#0ea5e9]">Castelar Gimnasio</h1>
+                <p className="text-xl text-gray-700 mt-1">Plan de Entrenamiento</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold">{athlete.full_name}</p>
-              <p className="text-sm text-gray-600">Generado el: {new Date().toLocaleDateString("es-ES")}</p>
+              <p className="text-2xl font-bold">{athlete.full_name}</p>
+              <p className="text-base text-gray-600">Generado el: {new Date().toLocaleDateString("es-ES")}</p>
             </div>
           </div>
 
@@ -76,8 +79,8 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
               return (
                 <div key={routine.id || idx} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
                   <div className="border-b-2 border-[#FF6B00] pb-2 mb-4">
-                    <h2 className="text-2xl font-bold">{routine.title}</h2>
-                    <p className="text-sm text-gray-600">
+                    <h2 className="text-[24px] font-bold">{routine.title}</h2>
+                    <p className="text-base text-gray-600">
                       {routine.start_date && routine.end_date
                         ? `${formatDate(routine.start_date)} - ${formatDate(routine.end_date)}`
                         : routine.end_date
@@ -87,63 +90,63 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
                             : "Sin fecha"}
                     </p>
                     {routine.description && (
-                      <p className="text-sm mt-2 italic text-gray-700">{routine.description}</p>
+                      <p className="text-base mt-2 italic text-gray-700">{routine.description}</p>
                     )}
                   </div>
 
                   {exercises.length > 0 ? (
-                    <table className="w-full text-left text-sm border-collapse">
+                    <table className="w-full text-left text-base border-collapse">
                       <thead>
                         <tr className="bg-[#FF6B00] text-white">
-                          <th className="p-2 border border-gray-300 w-1/4">Ejercicio</th>
-                          <th className="p-2 border border-gray-300 w-1/12">Series</th>
-                          <th className="p-2 border border-gray-300 w-1/12">Reps</th>
-                          <th className="p-2 border border-gray-300 w-1/6">Peso</th>
-                          <th className="p-2 border border-gray-300 w-1/6">Descanso</th>
-                          <th className="p-2 border border-gray-300 w-1/4">Notas</th>
+                          <th className="p-3 border border-gray-300 w-[30%]">Ejercicio</th>
+                          <th className="p-3 border border-gray-300 w-[12%]">Series</th>
+                          <th className="p-3 border border-gray-300 w-[12%]">Reps</th>
+                          <th className="p-3 border border-gray-300 w-[15%]">Peso</th>
+                          <th className="p-3 border border-gray-300 w-[15%]">Descanso</th>
+                          <th className="p-3 border border-gray-300 w-[16%]">Notas</th>
                         </tr>
                       </thead>
                       <tbody>
                         {exercises.filter((ex): ex is { name: string; sets?: string; reps?: string; weight?: string; duration?: string; notes?: string; metric_type?: "reps" | "time"; time_unit?: "seconds" | "minutes"; type?: "exercise" | "marker"; marker_color?: string; sets_detailed?: boolean; sets_detail?: { reps?: string; time?: string; weight?: string; rest?: string }[] } => typeof ex === 'object' && ex !== null && 'name' in ex).map((ex, eIdx: number) => (
                           ex.type === "marker" ? (
                             <tr key={eIdx} style={{ backgroundColor: ex.marker_color || "#FF6B00" }}>
-                              <td colSpan={6} className="p-3 border border-gray-300 text-center font-bold text-white">
+                              <td colSpan={6} className="p-3 border border-gray-300 text-center font-bold text-white text-lg">
                                 {ex.name}
                               </td>
                             </tr>
                           ) : ex.sets_detail && ex.sets_detail.length > 0 ? (
                             <tr key={eIdx} className="border-b border-gray-200 bg-white">
-                              <td className="p-2 border border-gray-300 font-medium text-black">{ex.name}</td>
-                              <td className="p-2 border border-gray-300 text-black" colSpan={4}>
+                              <td className="p-3 border border-gray-300 font-medium text-black">{ex.name}</td>
+                              <td className="p-3 border border-gray-300 text-black" colSpan={4}>
                                 {ex.sets_detail.map((set, sIdx) => (
-                                  <div key={sIdx} className="text-sm">
+                                  <div key={sIdx} className="text-base">
                                     {sIdx + 1}. {ex.metric_type === "time"
-                                      ? `${set.time || "-"}${ex.time_unit === "minutes" ? "'" : "\""}`
+                                      ? `${set.time || "-"}${ex.time_unit === "minutes" ? "'" : ""}`
                                       : `${set.reps || "-"} reps`}
                                     {" "}· {set.weight ? `${set.weight} kg` : "-"}
                                     {" "}· {set.rest || "-"}
                                   </div>
                                 ))}
                               </td>
-                              <td className="p-2 border border-gray-300 text-xs italic text-black">{ex.notes || "-"}</td>
+                              <td className="p-3 border border-gray-300 text-base italic text-black">{ex.notes || "-"}</td>
                             </tr>
                           ) : (
                             <tr key={eIdx} className="border-b border-gray-200 bg-white">
-                              <td className="p-2 border border-gray-300 font-medium text-black">{ex.name}</td>
-                              <td className="p-2 border border-gray-300 text-black">{ex.sets || "-"}</td>
-                              <td className="p-2 border border-gray-300 text-black">
+                              <td className="p-3 border border-gray-300 font-medium text-black">{ex.name}</td>
+                              <td className="p-3 border border-gray-300 text-black">{ex.sets || "-"}</td>
+                              <td className="p-3 border border-gray-300 text-black">
                                 {ex.reps ? `${ex.reps}${ex.metric_type === "time" ? (ex.time_unit === "minutes" ? "'" : "\"") : ""}` : "-"}
                               </td>
-                              <td className="p-2 border border-gray-300 text-black">{ex.weight ? `${ex.weight}${!ex.weight.toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
-                              <td className="p-2 border border-gray-300 text-black">{ex.duration || "-"}</td>
-                              <td className="p-2 border border-gray-300 text-xs italic text-black">{ex.notes || "-"}</td>
+                              <td className="p-3 border border-gray-300 text-black">{ex.weight ? `${ex.weight}${!ex.weight.toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
+                              <td className="p-3 border border-gray-300 text-black">{ex.duration || "-"}</td>
+                              <td className="p-3 border border-gray-300 text-base italic text-black">{ex.notes || "-"}</td>
                             </tr>
                           )
                         ))}
                       </tbody>
                     </table>
                   ) : (
-                    <p className="text-sm text-gray-500">No hay ejercicios detallados en esta rutina.</p>
+                    <p className="text-base text-gray-500">No hay ejercicios detallados en esta rutina.</p>
                   )}
                 </div>
               )
