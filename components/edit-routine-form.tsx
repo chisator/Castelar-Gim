@@ -470,6 +470,16 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                 </ReorderableCard>
               ))}
             </Reorder.Group>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={addExercise} className="flex-1">
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar Ejercicio
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={addMarker} className="flex-1">
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar Marca
+              </Button>
+            </div>
           </div>
 
           {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
