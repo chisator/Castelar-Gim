@@ -22,6 +22,26 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Next incrusta las variables NEXT_PUBLIC_* en el bundle del cliente durante el
+# build, así que tienen que estar disponibles en esta etapa. Se pasan como build
+# args desde docker-compose.yml en lugar de copiar el .env completo: de esa forma
+# los secretos (SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET, POSTGRES_PASSWORD)
+# no entran en ninguna capa de la imagen.
+#
+# Que estos dos valores queden en el historial de la imagen no es un problema:
+# son públicos por diseño y viajan igual en el JavaScript que recibe el navegador.
+# Las variables de runtime las inyecta docker-compose con `env_file`.
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Falla temprano y con un mensaje claro si faltan: sin ellas el build revienta
+# más adelante con un error de export opaco en /auth/sign-up.
+RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" -a -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  || (echo "ERROR: faltan NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY como build args. Verificá que estén en el .env junto al docker-compose.yml." && exit 1)
+
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
