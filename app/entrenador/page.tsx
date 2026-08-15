@@ -100,7 +100,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       .select("routine_id")
       .eq("user_id", userIdFilter)
 
-    const routineIds = (routineAssignments || []).map((r: { routine_id: string }) => r.routine_id)
+    const routineIds = (routineAssignments || []).map((r: RoutineAssignment) => r.routine_id)
     if (routineIds.length > 0) {
       const { data } = await supabaseAdmin
         .from("routines")

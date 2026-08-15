@@ -1,8 +1,52 @@
 "use server"
 
-import { createClient as createServerClient } from "@/lib/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
+import { requireRole, type AppRole } from "@/lib/auth"
+
+function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
+
+/**
+ * Verifica que el usuario pueda operar sobre una rutina concreta.
+ *
+ * Estas acciones usan la clave de servicio para saltear RLS, así que el
+ * chequeo de propiedad que antes hacía la base de datos hay que hacerlo
+ * acá explícitamente: sin esto, cualquier entrenador podía editar,
+ * borrar o exportar las rutinas de cualquier otro entrenador.
+ *
+ * - administrador: puede operar sobre cualquier rutina.
+ * - entrenador: solo sobre las rutinas que él creó.
+ */
+async function assertCanManageRoutine(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  routineId: string,
+  userId: string,
+  role: AppRole,
+): Promise<{ error?: string }> {
+  if (role === "administrador") return {}
+
+  const { data: routine, error } = await supabaseAdmin
+    .from("routines")
+    .select("trainer_id")
+    .eq("id", routineId)
+    .single()
+
+  if (error || !routine) {
+    return { error: "Rutina no encontrada" }
+  }
+
+  if (routine.trainer_id !== userId) {
+    return { error: "Esta rutina fue creada por otro entrenador" }
+  }
+
+  return {}
+}
 
 interface SetDetail {
   reps?: string
@@ -49,23 +93,22 @@ export async function updateRoutine(formData: {
   trainerId?: string
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const userRole = user?.user_metadata?.role
-
-    // Allow both trainers and admins
-    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
-      return { error: "No tienes permisos para actualizar rutinas" }
-    }
-
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para actualizar rutinas",
     )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
+
+    const supabaseAdmin = createAdminClient()
+
+    const ownership = await assertCanManageRoutine(
+      supabaseAdmin,
+      formData.routineId,
+      user.id,
+      userRole,
+    )
+    if (ownership.error) return { error: ownership.error }
 
     const updatePayload: Record<string, unknown> = {
       title: formData.title,
@@ -116,23 +159,17 @@ export async function updateRoutine(formData: {
 
 export async function deleteRoutine(routineId: string) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const userRole = user?.user_metadata?.role
-
-    // Allow both trainers and admins
-    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
-      return { error: "No tienes permisos para eliminar rutinas" }
-    }
-
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para eliminar rutinas",
     )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
+
+    const supabaseAdmin = createAdminClient()
+
+    const ownership = await assertCanManageRoutine(supabaseAdmin, routineId, user.id, userRole)
+    if (ownership.error) return { error: ownership.error }
 
     // Limpiar asignaciones de usuarios antes de borrar la rutina
     const { error: delAssignmentsError } = await supabaseAdmin
@@ -168,23 +205,17 @@ export async function renewRoutine({
   newEndDate?: string
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const userRole = user?.user_metadata?.role
-
-    // Allow both trainers and admins
-    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
-      return { error: "No tienes permisos para renovar la rutina" }
-    }
-
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para renovar la rutina",
     )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
+
+    const supabaseAdmin = createAdminClient()
+
+    const ownership = await assertCanManageRoutine(supabaseAdmin, routineId, user.id, userRole)
+    if (ownership.error) return { error: ownership.error }
 
     // Obtener rutina para validar existencia y fecha actual
     const { data: routine, error: getErr } = await supabaseAdmin
@@ -239,23 +270,17 @@ export async function renewRoutine({
 
 export async function exportRoutine(routineId: string, format: "json" | "csv") {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const userRole = user?.user_metadata?.role
-
-    // Allow both trainers and admins
-    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
-      return { error: "No tienes permisos para exportar rutinas" }
-    }
-
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para exportar rutinas",
     )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
+
+    const supabaseAdmin = createAdminClient()
+
+    const ownership = await assertCanManageRoutine(supabaseAdmin, routineId, user.id, userRole)
+    if (ownership.error) return { error: ownership.error }
 
     // Obtener rutina
     const { data: routine, error: routineErr } = await supabaseAdmin
@@ -310,22 +335,14 @@ export async function importRoutine(formData: {
 }) {
   console.log("SERVER ACTION: importRoutine called with", JSON.stringify({ ...formData, exercises: `${formData.exercises?.length} exercises` }))
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    // Allow both trainers and admins
-    const userRole = user?.user_metadata?.role
-    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
-      return { error: "No tienes permisos para importar rutinas" }
-    }
-
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para importar rutinas",
     )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
+
+    const supabaseAdmin = createAdminClient()
 
     // Determine the trainer_id for the new routine
     // If admin is creating, trainerId must be provided.
@@ -383,28 +400,15 @@ export async function updateAssignedUser(formData: {
   password?: string
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { error: "No autenticado" }
-    }
-
-    const userRole = user.user_metadata?.role
-
-    // Solo entrenadores o administradores pueden ejecutar esta acción
-    if (userRole !== "administrador" && userRole !== "entrenador") {
-      return { error: "No tienes permisos para actualizar usuarios" }
-    }
+    const auth = await requireRole(
+      ["entrenador", "administrador"],
+      "No tienes permisos para actualizar usuarios",
+    )
+    if (!auth.ok) return { error: auth.error }
+    const { user, role: userRole } = auth
 
     // Verificar que el usuario a editar exista y sea deportista
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
+    const supabaseAdmin = createAdminClient()
 
     const { data: targetProfile } = await supabaseAdmin
       .from("profiles")

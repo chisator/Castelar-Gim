@@ -42,9 +42,30 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  /**
+   * El rol se lee de `profiles`, NUNCA de `user.user_metadata`.
+   * `user_metadata` es reescribible por el propio usuario mediante
+   * `supabase.auth.updateUser({ data: { role: "administrador" } })`, así que
+   * usarlo acá permitía que cualquier deportista entrara al panel de admin.
+   *
+   * Se resuelve de forma perezosa: solo se consulta la base cuando la ruta
+   * realmente necesita decidir por rol, para no agregar una query a cada request.
+   */
+  let cachedRole: string | null | undefined
+  const getRole = async () => {
+    if (cachedRole !== undefined) return cachedRole
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user!.id)
+      .single()
+    cachedRole = profile?.role ?? null
+    return cachedRole
+  }
+
   // Si hay usuario, verificar rol y redirigir al dashboard correspondiente
   if (user && request.nextUrl.pathname === "/") {
-    const role = user.user_metadata?.role
+    const role = await getRole()
 
     const url = request.nextUrl.clone()
     if (role === "deportista") {
@@ -54,22 +75,26 @@ export async function updateSession(request: NextRequest) {
     } else if (role === "administrador") {
       url.pathname = "/admin"
     } else {
-      // Si no hay rol en metadata, redirigir a login para que se sincronice
+      // Si el perfil no tiene rol asignado, volver al login
       url.pathname = "/auth/login"
     }
     return NextResponse.redirect(url)
   }
 
   // Protección de rutas por rol
-  if (user) {
-    const role = user.user_metadata?.role
+  const needsRoleCheck =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/entrenador") ||
+    request.nextUrl.pathname.startsWith("/deportista")
+
+  if (user && needsRoleCheck) {
+    const role = await getRole()
 
     // Verificar acceso a rutas de administrador
     if (request.nextUrl.pathname.startsWith("/admin")) {
-      const isAllowedAdminRouteForTrainer = 
-        request.nextUrl.pathname.startsWith("/admin/ejercicios") || 
-        request.nextUrl.pathname.startsWith("/admin/eventos");
-      
+      const isAllowedAdminRouteForTrainer =
+        request.nextUrl.pathname.startsWith("/admin/ejercicios")
+
       if (role === "entrenador" && isAllowedAdminRouteForTrainer) {
         // Permitido para entrenadores
       } else if (role !== "administrador") {

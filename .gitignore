@@ -43,3 +43,6 @@ next-env.d.ts
 # PWA generated files
 public/sw.js
 public/workbox-*.js
+
+# Estado local de la CLI de Supabase (project ref, pooler url)
+supabase/.temp

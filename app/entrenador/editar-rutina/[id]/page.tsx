@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/server"
+import { getAuthenticatedUser } from "@/lib/auth"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { redirect } from "next/navigation"
 import { EditRoutineForm } from "@/components/edit-routine-form"
@@ -9,13 +9,8 @@ type PageProps = {
 }
 
 export default async function EditRoutinePage({ params }: PageProps) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userRole = user?.user_metadata?.role
+  // El rol se lee de `profiles`, no de `user_metadata` (reescribible por el usuario).
+  const { user, role: userRole } = await getAuthenticatedUser()
 
   if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
     redirect("/unauthorized")
@@ -38,6 +33,13 @@ export default async function EditRoutinePage({ params }: PageProps) {
   if (error || !routine) {
     // Redirigir si no se encuentra la rutina o no tiene permisos (para no admin)
     redirect(userRole === "administrador" ? "/admin" : "/entrenador")
+  }
+
+  // Esta consulta usa la clave de servicio, que saltea RLS: hay que validar
+  // la propiedad a mano. Sin esto, un entrenador podía abrir el editor de
+  // las rutinas de cualquier otro entrenador escribiendo el id en la URL.
+  if (userRole === "entrenador" && routine.trainer_id !== user.id) {
+    redirect("/entrenador")
   }
 
   // Obtener TODOS los perfiles de deportistas

@@ -14,21 +14,30 @@ export function BottomNav() {
 
   useEffect(() => {
     const supabase = createClient()
-    
-    async function getUserRole() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.user_metadata?.role) {
-        setUserRole(user.user_metadata.role)
+
+    // El rol sale de `profiles` (protegido por RLS), no de `user_metadata`,
+    // que el propio usuario puede reescribir. Acá es solo cosmético —decide
+    // qué pestañas se muestran— pero se mantiene una única fuente de verdad.
+    async function loadRole(userId: string | undefined) {
+      if (!userId) {
+        setUserRole(null)
+        return
       }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single()
+      setUserRole(profile?.role ?? null)
     }
-    
-    getUserRole()
+
+    supabase.auth.getUser().then(({ data: { user } }) => loadRole(user?.id))
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user?.user_metadata?.role) {
-        setUserRole(session.user.user_metadata.role)
-      } else if (event === "SIGNED_OUT") {
+      if (event === "SIGNED_OUT") {
         setUserRole(null)
+      } else if (session?.user?.id) {
+        loadRole(session.user.id)
       }
     })
 

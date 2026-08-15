@@ -88,6 +88,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   // Track which exercise has the % popover open and loading state
+  const [, setOpenPercentIndex] = useState<number | null>(null)
   const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
   const [prNotFoundIndex, setPrNotFoundIndex] = useState<number | null>(null)
 
@@ -472,7 +473,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                 {exercise.type === "marker" ? (
                   <>
                     <div className="grid gap-2">
-                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: &quot;Día 1 - Piernas 🔥&quot;)</Label>
+                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: &ldquo;Día 1 - Piernas 🔥&rdquo;)</Label>
                       <Input
                         id={`marker-name-${index}`}
                         placeholder="Ej: Día 1 - Piernas"

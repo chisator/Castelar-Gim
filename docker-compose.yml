@@ -1,6 +1,13 @@
 services:
   castelar-web:
-    build: .
+    build:
+      context: .
+      # Solo las variables públicas, que Next necesita incrustar en el bundle
+      # durante el build. Compose las resuelve desde el .env de esta carpeta.
+      # Los secretos NO se pasan acá: llegan en runtime vía `env_file`.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     container_name: castelar-web
     restart: always
     env_file:

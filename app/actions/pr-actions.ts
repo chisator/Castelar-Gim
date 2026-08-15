@@ -3,6 +3,7 @@
 import { createClient as createServerClient } from "@/lib/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
+import { getAuthenticatedUser } from "@/lib/auth"
 
 export async function savePersonalRecord(exerciseId: string, weight: number, reps: number, dateStr: string) {
     const supabase = await createServerClient()
@@ -85,14 +86,23 @@ export async function getExerciseCatalog() {
 }
 
 export async function getLatestPRForUserAndExercise(userId: string, exerciseId: string) {
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user, role } = await getAuthenticatedUser()
 
     if (!user) {
         return { error: "Usuario no autenticado", data: null }
     }
 
-    // Use admin client to bypass RLS, because the trainer needs to fetch the athlete's PR
+    // Esta consulta usa la clave de servicio para saltear RLS (un entrenador
+    // necesita ver el PR de su deportista), así que hay que autorizar a mano:
+    // sin esto, cualquier usuario podía leer los récords de cualquier otro
+    // pasando un `userId` arbitrario.
+    const isOwnRecord = userId === user.id
+    const canReadOthers = role === "entrenador" || role === "administrador"
+
+    if (!isOwnRecord && !canReadOthers) {
+        return { error: "No tienes permisos para ver estos récords", data: null }
+    }
+
     const supabaseAdmin = createSupabaseClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,

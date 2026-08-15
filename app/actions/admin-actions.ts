@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { createClient as createServerClient } from "@/lib/server"
+import { requireRole } from "@/lib/auth"
 
 export async function createUser(formData: {
   email: string
@@ -12,31 +13,16 @@ export async function createUser(formData: {
   telefono?: string
 }) {
   try {
-    console.log("[v0] Starting user creation:", formData.email)
-
-    // Verificar que el usuario actual es administrador
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      console.log("[v0] No authenticated user")
-      return { error: "No autenticado" }
-    }
-
-    const userRole = user.user_metadata?.role
-
-    if (userRole !== "administrador" && userRole !== "entrenador") {
-      console.log("[v0] User is not admin/trainer:", userRole)
-      return { error: "No tienes permisos para crear usuarios" }
-    }
+    // Verificar que el usuario actual es administrador o entrenador
+    const auth = await requireRole(
+      ["administrador", "entrenador"],
+      "No tienes permisos para crear usuarios",
+    )
+    if (!auth.ok) return { error: auth.error }
+    const userRole = auth.role
 
     // Si el caller es entrenador, forzar rol deportista
     const effectiveRole = userRole === "entrenador" ? "deportista" : formData.role
-    if (userRole === "entrenador") {
-      console.log("[v0] Trainer creating user — forcing deportista role")
-    }
 
     // Crear cliente con service role para tener permisos de admin
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -45,8 +31,6 @@ export async function createUser(formData: {
         persistSession: false,
       },
     })
-
-    console.log("[v0] Creating user with admin client")
 
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: formData.email,
@@ -59,11 +43,9 @@ export async function createUser(formData: {
     })
 
     if (createError) {
-      console.log("[v0] Error creating user:", createError)
+      console.error("Error al crear usuario:", createError.message)
       return { error: createError.message }
     }
-
-    console.log("[v0] User created successfully:", newUser.user?.id)
 
     // Asegurar que el perfil se cree/actualice con el rol correcto.
     // Algunos entornos pueden disparar el trigger antes de que user_metadata
@@ -105,9 +87,7 @@ export async function createUser(formData: {
           const { error: assignError } = await supabaseAdmin.from("trainer_user_assignments").insert(assignments)
 
           if (assignError) {
-            console.error("[v0] Error auto-assigning user to trainers:", assignError)
-          } else {
-            console.log(`[v0] User ${newUser.user?.id} assigned to ${trainers.length} trainers automatically.`)
+            console.error("Error al asignar usuario a entrenadores:", assignError.message)
           }
         }
       } catch (assignCatchError) {
@@ -175,14 +155,10 @@ export async function updateUser(formData: {
   password?: string
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const auth = await requireRole(["administrador"], "No tienes permisos para actualizar usuarios")
+    if (!auth.ok) return { error: auth.error }
 
-    if (!user || user.user_metadata?.role !== "administrador") {
-      return { error: "No tienes permisos para actualizar usuarios" }
-    }
+    const supabase = await createServerClient()
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: {
@@ -201,8 +177,16 @@ export async function updateUser(formData: {
     }
 
     if (formData.password) {
-      const { data: targetUser } = await supabaseAdmin.auth.admin.getUserById(formData.userId)
-      if (targetUser.user?.user_metadata?.role === "administrador") {
+      // El rol del usuario objetivo se lee de `profiles` (fuente de verdad):
+      // `user_metadata` es reescribible por el propio usuario, así que
+      // cualquiera podría marcarse como administrador para blindarse.
+      const { data: targetProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("role")
+        .eq("id", formData.userId)
+        .single()
+
+      if (targetProfile?.role === "administrador") {
         return { error: "No puedes cambiar la contraseña de otro administrador" }
       }
       updateData.password = formData.password
@@ -238,14 +222,8 @@ export async function updateUser(formData: {
 
 export async function deleteUser(userId: string) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user || user.user_metadata?.role !== "administrador") {
-      return { error: "No tienes permisos para eliminar usuarios" }
-    }
+    const auth = await requireRole(["administrador"], "No tienes permisos para eliminar usuarios")
+    if (!auth.ok) return { error: auth.error }
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: {
@@ -255,7 +233,6 @@ export async function deleteUser(userId: string) {
     })
 
     // Limpieza manual de dependencias para evitar errores de Foreign Key
-    console.log("[v0] Cleaning up user dependencies for:", userId)
 
     // 1. Asignaciones (Como deportista o entrenador)
     const { error: assignErr } = await supabaseAdmin.from("trainer_user_assignments").delete().or(`user_id.eq.${userId},trainer_id.eq.${userId}`)
@@ -278,7 +255,6 @@ export async function deleteUser(userId: string) {
 
     if (trainerRoutines && trainerRoutines.length > 0) {
       const routineIds = trainerRoutines.map(r => r.id)
-      console.log(`[v0] Deleting ${routineIds.length} routines owned by trainer`)
 
       // b. Borrar logs vinculados a estas rutinas
       const { error: logsRoutineErr } = await supabaseAdmin.from("workout_logs").delete().in("routine_id", routineIds)
@@ -339,13 +315,13 @@ export async function getExerciseCatalog() {
 
 export async function createExerciseCatalogItem(formData: { name: string; video_url?: string }) {
   try {
-    const supabase = await createServerClient()
+    const auth = await requireRole(
+      ["administrador", "entrenador"],
+      "No tienes permisos para crear ejercicios",
+    )
+    if (!auth.ok) return { error: auth.error }
 
-    // Validar permisos (solo admin o entrenador podrían, asumimos admin por ubicación de archivo, 
-    // pero idealmente deberíamos chequear rol. Por ahora confiamos en middleware/layout protection)
-    // O mejor, chequeamos usuario auth básica.
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: "No autenticado" }
+    const supabase = await createServerClient()
 
     const { data, error } = await supabase
       .from("exercise_catalog")
@@ -369,6 +345,12 @@ export async function createExerciseCatalogItem(formData: { name: string; video_
 
 export async function updateExerciseCatalogItem(formData: { id: string; name: string; video_url?: string }) {
   try {
+    const auth = await requireRole(
+      ["administrador", "entrenador"],
+      "No tienes permisos para actualizar ejercicios",
+    )
+    if (!auth.ok) return { error: auth.error }
+
     const supabase = await createServerClient()
 
     const { error } = await supabase
@@ -392,6 +374,12 @@ export async function updateExerciseCatalogItem(formData: { id: string; name: st
 
 export async function deleteExerciseCatalogItem(id: string) {
   try {
+    const auth = await requireRole(
+      ["administrador", "entrenador"],
+      "No tienes permisos para eliminar ejercicios",
+    )
+    if (!auth.ok) return { error: auth.error }
+
     const supabase = await createServerClient()
 
     const { error } = await supabase
@@ -414,12 +402,8 @@ export async function deleteExerciseCatalogItem(id: string) {
 
 export async function getAdminEvents() {
   try {
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user || (user.user_metadata?.role !== "administrador" && user.user_metadata?.role !== "entrenador")) {
-      return { error: "No tienes permisos" }
-    }
+    const auth = await requireRole(["administrador", "entrenador"], "No tienes permisos")
+    if (!auth.ok) return { error: auth.error }
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: {
@@ -445,14 +429,8 @@ export async function getAdminEvents() {
 
 export async function getAttendees(classId: string) {
   try {
-    console.log("getAttendees called for classId:", classId)
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user || (user.user_metadata?.role !== "administrador" && user.user_metadata?.role !== "entrenador")) {
-      console.log("getAttendees failed: not an admin or no user")
-      return { error: "No tienes permisos" }
-    }
+    const auth = await requireRole(["administrador", "entrenador"], "No tienes permisos")
+    if (!auth.ok) return { error: auth.error }
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: {
