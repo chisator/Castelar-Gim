@@ -1,6 +1,36 @@
+# Dependencias y artefactos de build (se regeneran dentro de la imagen)
 node_modules
-npm-debug.log
 .next
+out
+build
+*.tsbuildinfo
+
+# SECRETOS — nunca deben entrar en ninguna capa de la imagen.
+# El Dockerfile hace `COPY . .` en la etapa builder: sin esta exclusión,
+# SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET y POSTGRES_PASSWORD
+# quedaban horneados en esa capa.
+.env
+.env.*
+*.pem
+
+# Historial de git (pesado y con datos que no hacen falta para compilar)
+.git
+.gitignore
+.github
+
+# Estado local de la CLI de Supabase (project ref, pooler url)
+supabase/.temp
+
+# Config de editores/herramientas
+# (.eslintrc.json NO se excluye: `next build` corre ESLint y lo necesita)
+.vscode
+.opencode
+
+# Documentación
+*.md
+
+# Varios
 .DS_Store
 **/.DS_Store
 **/Drop Box
+npm-debug.log

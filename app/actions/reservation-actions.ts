@@ -1,7 +1,40 @@
 'use server'
 
 import { createClient } from "@/lib/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
+
+/**
+ * Cliente con clave de servicio para escribir los créditos de actividad.
+ *
+ * Los créditos son saldo del negocio: se mueven solo desde el servidor.
+ * La migración `20260815000000_fix_rls_privilege_escalation.sql` bloquea
+ * la escritura de `activity_credits` / `expiring_activity_credits` desde
+ * una sesión de usuario, porque con la policy anterior un deportista podía
+ * auto-asignarse reservas ilimitadas con un simple UPDATE a su perfil.
+ */
+function createCreditsClient() {
+    return createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    )
+}
+
+/**
+ * Devuelve el id del usuario autenticado.
+ *
+ * Las acciones de reserva recibían el `userId` como parámetro desde el
+ * cliente. Se deriva de la sesión para que nadie pueda operar sobre la
+ * cuenta de otro socio.
+ */
+async function getSessionUserId(): Promise<string | null> {
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+    return user?.id ?? null
+}
 
 // Helper to check and renew credits
 async function checkAndRenewCredits(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -45,7 +78,8 @@ async function checkAndRenewCredits(userId: string, supabase: Awaited<ReturnType
         }
 
         if (Object.keys(updates).length > 0) {
-            await supabase.from('profiles').update(updates).eq('id', userId)
+            // Escritura de créditos: siempre con clave de servicio.
+            await createCreditsClient().from('profiles').update(updates).eq('id', userId)
         }
 
     } catch (e) {
@@ -53,8 +87,13 @@ async function checkAndRenewCredits(userId: string, supabase: Awaited<ReturnType
     }
 }
 
-export async function reserveClass(classId: string, userId: string) {
+export async function reserveClass(classId: string) {
     const supabase = await createClient()
+
+    const userId = await getSessionUserId()
+    if (!userId) {
+        return { error: "No autenticado" }
+    }
 
     try {
         // Run auto-renewal/expiration check first
@@ -173,7 +212,7 @@ export async function reserveClass(classId: string, userId: string) {
             currentCredits[activityTitle] = c - 1;
         }
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await createCreditsClient()
             .from('profiles')
             .update({
                 activity_credits: currentCredits,
@@ -196,8 +235,13 @@ export async function reserveClass(classId: string, userId: string) {
     }
 }
 
-export async function cancelReservation(classId: string, userId: string) {
+export async function cancelReservation(classId: string) {
     const supabase = await createClient()
+
+    const userId = await getSessionUserId()
+    if (!userId) {
+        return { error: "No autenticado" }
+    }
 
     try {
         // Run auto-renewal check
@@ -247,7 +291,7 @@ export async function cancelReservation(classId: string, userId: string) {
             const title = classData.title;
             currentCredits[title] = (currentCredits[title] || 0) + 1;
 
-            const { error: updateError } = await supabase
+            const { error: updateError } = await createCreditsClient()
                 .from('profiles')
                 .update({ activity_credits: currentCredits })
                 .eq('id', userId)
@@ -267,8 +311,11 @@ export async function cancelReservation(classId: string, userId: string) {
 }
 
 
-export async function getUserReservations(userId: string) {
+export async function getUserReservations() {
     const supabase = await createClient()
+
+    const userId = await getSessionUserId()
+    if (!userId) return []
 
     // Check renewal on read too, so UI is accurate
     await checkAndRenewCredits(userId, supabase)

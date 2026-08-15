@@ -3,13 +3,15 @@ FROM node:20-slim AS base
 # Dependencias
 FROM base AS deps
 WORKDIR /app
-COPY package.json ./
 
-# 1. Limpiamos cualquier caché previo y actualizamos npm
-RUN npm cache clean --force && npm install -g npm@latest
+# 1. Copiamos el manifiesto Y el lockfile: `npm ci` exige ambos e instala
+# exactamente las versiones fijadas. Antes se copiaba solo package.json y se
+# usaba `npm install`, con lo que cada build podía resolver dependencias
+# distintas (builds no reproducibles).
+COPY package.json package-lock.json ./
 
-# 2. Instalamos las dependencias
-RUN npm install
+# 2. Instalación limpia y determinista a partir del lockfile
+RUN npm ci
 
 # 3. FIX: Instalamos explícitamente los binarios nativos de Tailwind v4 para Linux
 # Esto soluciona el bug conocido de NPM con dependencias opcionales en Docker

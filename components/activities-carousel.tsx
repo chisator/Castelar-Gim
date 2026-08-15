@@ -197,7 +197,7 @@ export function ActivitiesCarousel() {
         })
 
         const { reserveClass } = await import('@/app/actions/reservation-actions')
-        const result = await reserveClass(classId, userId)
+        const result = await reserveClass(classId)
 
         if (result?.error) {
             // Rollback
@@ -231,7 +231,7 @@ export function ActivitiesCarousel() {
         })
 
         const { cancelReservation } = await import('@/app/actions/reservation-actions')
-        const result = await cancelReservation(classId, userId)
+        const result = await cancelReservation(classId)
 
         if (result?.error) {
             // Rollback

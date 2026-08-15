@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ZoomIn, ZoomOut } from "lucide-react"
+import { ZoomIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useZoom, ZOOM_LABELS } from "@/components/zoom-provider"
 

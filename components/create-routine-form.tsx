@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
-import { Check, ChevronsUpDown, Plus, Percent, Loader2, X, GripVertical, ArrowUp, ArrowDown } from "lucide-react"
-import { Reorder, useDragControls } from "framer-motion"
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react"
+import { Reorder } from "framer-motion"
 import { cn } from "@/lib/utils"
 import {
   Command,
@@ -30,7 +30,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
-import { SmartNumberInput } from "@/components/smart-number-input"
 import { ExerciseSetEditor } from "@/components/exercise-set-editor"
 import { ReorderableCard } from "@/components/reorderable-card"
 
@@ -87,7 +86,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   // Track which exercise has the % popover open and loading state
-  const [openPercentIndex, setOpenPercentIndex] = useState<number | null>(null)
+  const [, setOpenPercentIndex] = useState<number | null>(null)
   const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
   const [prNotFoundIndex, setPrNotFoundIndex] = useState<number | null>(null)
 
@@ -190,8 +189,6 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     }
     setExercises(newExercises)
   }
-
-  const PERCENTAGES = Array.from({ length: 71 }, (_, i) => 30 + i) // 30 to 100
 
   const handleApplyPercentage = async (index: number, pct: number) => {
     const exercise = exercises[index]
@@ -464,7 +461,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                 {exercise.type === "marker" ? (
                   <>
                     <div className="grid gap-2">
-                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: "Día 1 - Piernas 🔥")</Label>
+                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: &ldquo;Día 1 - Piernas 🔥&rdquo;)</Label>
                       <Input
                         id={`marker-name-${index}`}
                         placeholder="Ej: Día 1 - Piernas"

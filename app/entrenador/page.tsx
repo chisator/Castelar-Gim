@@ -14,7 +14,7 @@ import { ExportPdfButton } from "@/components/export-pdf-button"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 import { TrainerUsersTable } from "@/components/trainer-users-table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronDown, Users } from "lucide-react"
 
 interface PageRoutine {
   id: string
@@ -100,7 +100,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       .select("routine_id")
       .eq("user_id", userIdFilter)
 
-    const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
+    const routineIds = (routineAssignments || []).map((r: RoutineAssignment) => r.routine_id)
     if (routineIds.length > 0) {
       const { data } = await supabaseAdmin
         .from("routines")

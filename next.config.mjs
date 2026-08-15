@@ -43,6 +43,34 @@ const nextConfig = {
       },
     ],
   },
+
+  // 3. Cabeceras de seguridad. La app se sirve detrás de Traefik con TLS,
+  // pero estas cabeceras las tiene que emitir la aplicación.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Evita que el navegador adivine el tipo MIME de una respuesta
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Impide que la app se embeba en un iframe (clickjacking)
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // No filtrar la URL completa al navegar a sitios externos
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // La PWA no usa cámara, micrófono ni geolocalización
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+          // Fuerza HTTPS durante un año (Traefik ya redirige, esto lo fija en el cliente)
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
