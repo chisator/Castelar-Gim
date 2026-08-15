@@ -87,8 +87,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
-  // Track which exercise has the % popover open and loading state
-  const [, setOpenPercentIndex] = useState<number | null>(null)
+  // Track loading state del popover de %
   const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
   const [prNotFoundIndex, setPrNotFoundIndex] = useState<number | null>(null)
 

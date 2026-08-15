@@ -3,6 +3,7 @@
 import { createClient as createServerClient } from "@/lib/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
+import { requireRole } from "@/lib/auth"
 
 interface SetDetail {
   reps?: string
@@ -34,14 +35,9 @@ export async function createTemplate(formData: {
   exercises: Exercise[]
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user || user.user_metadata?.role !== "entrenador") {
-      return { error: "No tienes permisos para crear plantillas" }
-    }
+    const auth = await requireRole(["entrenador"], "No tienes permisos para crear plantillas")
+    if (!auth.ok) return { error: auth.error }
+    const { user } = auth
 
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -78,14 +74,9 @@ export async function updateTemplate(formData: {
   exercises: Exercise[]
 }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user || user.user_metadata?.role !== "entrenador") {
-      return { error: "No tienes permisos para actualizar plantillas" }
-    }
+    const auth = await requireRole(["entrenador"], "No tienes permisos para actualizar plantillas")
+    if (!auth.ok) return { error: auth.error }
+    const { user } = auth
 
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -116,14 +107,9 @@ export async function updateTemplate(formData: {
 
 export async function deleteTemplate(templateId: string) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user || user.user_metadata?.role !== "entrenador") {
-      return { error: "No tienes permisos para eliminar plantillas" }
-    }
+    const auth = await requireRole(["entrenador"], "No tienes permisos para eliminar plantillas")
+    if (!auth.ok) return { error: auth.error }
+    const { user } = auth
 
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -150,14 +136,11 @@ export async function deleteTemplate(templateId: string) {
 
 export async function getMyTemplates() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const auth = await requireRole(["entrenador"], "No tienes permisos")
+    if (!auth.ok) return { error: auth.error, data: [] }
+    const { user } = auth
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
-      return { error: "No tienes permisos", data: [] }
-    }
+    const supabase = await createServerClient()
 
     const { data, error } = await supabase
       .from("routine_templates")
@@ -177,15 +160,8 @@ export async function getMyTemplates() {
 
 export async function getAllTemplates() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const userRole = user?.user_metadata?.role
-    if (!user || userRole !== "administrador") {
-      return { error: "No tienes permisos", data: [] }
-    }
+    const auth = await requireRole(["administrador"], "No tienes permisos")
+    if (!auth.ok) return { error: auth.error, data: [] }
 
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
