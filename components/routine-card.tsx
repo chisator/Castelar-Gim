@@ -105,7 +105,7 @@ function ExerciseItem({ exercise }: { exercise: Exercise }) {
               </span>
             </p>
           )}
-          {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!exercise.weight.toLowerCase().includes("kg") && " kg"}</span></p>}
+          {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!String(exercise.weight).toLowerCase().includes("kg") && " kg"}</span></p>}
           {exercise.duration && <p className="text-muted-foreground">Descanso: <span className="text-foreground">{exercise.duration}</span></p>}
         </div>
       )}

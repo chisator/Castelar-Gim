@@ -9,6 +9,7 @@ import { UsersTable } from "@/components/users-table"
 import { AssignmentsTable } from "@/components/assignments-table"
 import { RoutinesTable } from "@/components/routines-table"
 import { TrainerRoutinesStats } from "@/components/trainer-routines-stats"
+import { TemplatesTable } from "@/components/templates-table"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 
@@ -47,12 +48,13 @@ export default async function AdminPage({
   const routinesTrainer = typeof searchParams.routinesTrainer === 'string' ? searchParams.routinesTrainer : 'all'
 
   // Estadísticas (Consultas optimizadas solo para conteo)
-  const [{ count: totalUsers }, { count: totalAthletes }, { count: totalTrainers }, { count: totalRoutines }, { count: totalAssignments }] = await Promise.all([
+  const [{ count: totalUsers }, { count: totalAthletes }, { count: totalTrainers }, { count: totalRoutines }, { count: totalAssignments }, { count: totalTemplates }] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "deportista"),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "entrenador"),
     supabase.from("routines").select("*", { count: "exact", head: true }),
-    supabase.from("trainer_user_assignments").select("*", { count: "exact", head: true })
+    supabase.from("trainer_user_assignments").select("*", { count: "exact", head: true }),
+    supabase.from("routine_templates").select("*", { count: "exact", head: true })
   ])
 
   // Obtener lista mínima de todos los usuarios para los Selects (Crear Asignación, etc.)
@@ -98,6 +100,12 @@ export default async function AdminPage({
   const { data: routines, count: routinesCount } = await routinesQuery
     .order("created_at", { ascending: false })
     .range((routinesPage - 1) * perPage, routinesPage * perPage - 1)
+
+  // Obtener plantillas para la pestaña de supervisión
+  const { data: templates } = await supabase
+    .from("routine_templates")
+    .select("*, profiles!routine_templates_trainer_id_fkey(full_name)")
+    .order("created_at", { ascending: false })
 
   // Para Stats, usamos todas las rutinas. Como Stats es pesado, idealmente tendríamos endpoints, pero por ahora...
   // Obtendremos todas las rutinas solo para Stats si es necesario. Para evitar romper `TrainerRoutinesStats`,
@@ -241,13 +249,31 @@ export default async function AdminPage({
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-0">
+              <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground tracking-tight">Plantillas</CardTitle>
+              <svg className="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </CardHeader>
+            <CardContent className="p-2 pt-0">
+              <div className="text-lg sm:text-xl font-bold">{totalTemplates || 0}</div>
+            </CardContent>
+          </Card>
+
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto p-1 gap-1">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1 gap-1">
             <TabsTrigger value="users" className="py-2">Usuarios</TabsTrigger>
             <TabsTrigger value="assignments" className="py-2">Asignaciones</TabsTrigger>
             <TabsTrigger value="routines" className="py-2">Rutinas</TabsTrigger>
+            <TabsTrigger value="templates" className="py-2">Plantillas</TabsTrigger>
             <TabsTrigger value="stats" className="py-2">Estadísticas</TabsTrigger>
           </TabsList>
 
@@ -261,6 +287,10 @@ export default async function AdminPage({
 
           <TabsContent value="routines">
             <RoutinesTable routines={routines || []} trainers={allMinimalUsers?.filter(u => u.role === 'entrenador') || []} users={allMinimalUsers || []} totalPages={Math.ceil((routinesCount || 0) / perPage)} />
+          </TabsContent>
+
+          <TabsContent value="templates">
+            <TemplatesTable templates={templates || []} />
           </TabsContent>
 
           <TabsContent value="stats">

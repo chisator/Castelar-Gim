@@ -111,11 +111,12 @@ export function WorkoutLogForm({ routineId, initialExercises, existingLog }: Wor
     const addSet = (entryIndex: number) => {
         const newEntries = [...entries]
         const previousSet = newEntries[entryIndex].sets_data[newEntries[entryIndex].sets_data.length - 1]
+        const isTimeBased = previousSet?.metric_type === "time" || initialExercises[entryIndex]?.metric_type === "time"
         // Copy values from previous set for convenience
         const newSet: SetData = {
             weight: previousSet?.weight || "",
         }
-        if (previousSet?.metric_type === "time") {
+        if (isTimeBased) {
             newSet.time = previousSet?.time || ""
             newSet.metric_type = "time"
         } else {

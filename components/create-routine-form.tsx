@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
-import { Check, ChevronsUpDown, Plus, Percent, Loader2, X, GripVertical, ArrowUp, ArrowDown } from "lucide-react"
-import { Reorder, useDragControls } from "framer-motion"
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react"
+import { Reorder } from "framer-motion"
 import { cn } from "@/lib/utils"
 import {
   Command,
@@ -30,9 +30,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
-import { SmartNumberInput } from "@/components/smart-number-input"
 import { ExerciseSetEditor } from "@/components/exercise-set-editor"
 import { ReorderableCard } from "@/components/reorderable-card"
+import { TemplateSelectorDialog } from "@/components/template-selector-dialog"
 
 interface SetDetail {
   reps?: string
@@ -85,9 +85,9 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   // Track which exercise has the % popover open and loading state
-  const [openPercentIndex, setOpenPercentIndex] = useState<number | null>(null)
   const [loadingPRIndex, setLoadingPRIndex] = useState<number | null>(null)
   const [prNotFoundIndex, setPrNotFoundIndex] = useState<number | null>(null)
 
@@ -191,12 +191,9 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setExercises(newExercises)
   }
 
-  const PERCENTAGES = Array.from({ length: 71 }, (_, i) => 30 + i) // 30 to 100
-
   const handleApplyPercentage = async (index: number, pct: number) => {
     const exercise = exercises[index]
-    const manualWeight = parseFloat(exercise.weight?.replace(/ ?kg$/i, "") || "")
-    setOpenPercentIndex(null)
+    const manualWeight = parseFloat(String(exercise.weight || "").replace(/ ?kg$/i, ""))
     setPrNotFoundIndex(null)
 
     if (!isNaN(manualWeight) && manualWeight > 0) {
@@ -226,7 +223,6 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     }
   }
 
-  // ... (maintain handleImportExercises and handleSubmit)
   const handleImportExercises = (importedExercises: Exercise[]) => {
     const currentEmpty = exercises.filter((ex) => ex.name.trim() === "")
     if (currentEmpty.length === exercises.length) {
@@ -234,6 +230,15 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     } else {
       setExercises([...exercises, ...importedExercises])
     }
+  }
+
+  const handleApplyTemplate = (template: { description?: string; exercises: Exercise[] }) => {
+    setDescription(template.description || "")
+    const newExercises = template.exercises.map((ex) => ({
+      ...ex,
+      id: generateId(),
+    }))
+    setExercises(newExercises)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -434,6 +439,9 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
               <CardDescription>Agrega los ejercicios de la rutina</CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowTemplateDialog(true)}>
+                Usar Plantilla
+              </Button>
               <Button type="button" variant="outline" onClick={() => setShowImportDialog(true)}>
                 Importar Ejercicios
               </Button>
@@ -464,7 +472,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                 {exercise.type === "marker" ? (
                   <>
                     <div className="grid gap-2">
-                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: "Día 1 - Piernas 🔥")</Label>
+                      <Label htmlFor={`marker-name-${index}`} className="text-white">Nombre de la división (ej: &quot;Día 1 - Piernas 🔥&quot;)</Label>
                       <Input
                         id={`marker-name-${index}`}
                         placeholder="Ej: Día 1 - Piernas"
@@ -567,6 +575,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
         isOpen={showImportDialog}
         onOpenChange={setShowImportDialog}
         onImport={handleImportExercises}
+      />
+
+      <TemplateSelectorDialog
+        isOpen={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSelect={(template) => handleApplyTemplate(template)}
       />
     </form>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Line, LineChart, Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -26,9 +26,9 @@ export function ProgressChart({ data, exerciseName }: ProgressChartProps) {
     const [timeRange, setTimeRange] = useState<"30d" | "1y" | "all">("all")
 
     // If time-based exercise, default to "time" metric
-    useState(() => {
+    useEffect(() => {
         if (isTimeBased) setMetric("time")
-    })
+    }, [isTimeBased])
 
     const filteredData = data?.filter(item => {
         if (timeRange === "all") return true

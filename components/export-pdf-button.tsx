@@ -137,7 +137,7 @@ export function ExportPdfButton({ athlete, routines }: ExportPdfButtonProps) {
                               <td className="p-3 border border-gray-300 text-black">
                                 {ex.reps ? `${ex.reps}${ex.metric_type === "time" ? (ex.time_unit === "minutes" ? "'" : "\"") : ""}` : "-"}
                               </td>
-                              <td className="p-3 border border-gray-300 text-black">{ex.weight ? `${ex.weight}${!ex.weight.toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
+                              <td className="p-3 border border-gray-300 text-black">{ex.weight ? `${ex.weight}${!String(ex.weight).toLowerCase().includes('kg') ? ' kg' : ''}` : "-"}</td>
                               <td className="p-3 border border-gray-300 text-black">{ex.duration || "-"}</td>
                               <td className="p-3 border border-gray-300 text-base italic text-black">{ex.notes || "-"}</td>
                             </tr>

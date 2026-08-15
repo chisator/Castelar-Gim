@@ -14,7 +14,7 @@ import { ExportPdfButton } from "@/components/export-pdf-button"
 import { CreateUserDialog } from "@/components/create-user-dialog"
 import { TrainerUsersTable } from "@/components/trainer-users-table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronDown, Users } from "lucide-react"
 
 interface PageRoutine {
   id: string
@@ -100,7 +100,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       .select("routine_id")
       .eq("user_id", userIdFilter)
 
-    const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
+    const routineIds = (routineAssignments || []).map((r: { routine_id: string }) => r.routine_id)
     if (routineIds.length > 0) {
       const { data } = await supabaseAdmin
         .from("routines")
@@ -239,7 +239,13 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
           </div>
           <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-4">
             <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              <Link href="/entrenador">Principal</Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               <Link href="/admin/ejercicios">Ejercicios</Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              <Link href="/entrenador/plantillas">Plantillas</Link>
             </Button>
           </div>
 

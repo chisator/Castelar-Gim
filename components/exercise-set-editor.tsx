@@ -300,7 +300,7 @@ export function ExerciseSetEditor({ exercise, index, onChange, onApplyPercentage
                 <Input
                   id={`exercise-weight-${index}`}
                   placeholder="Ej: 20"
-                  value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                  value={String(exercise.weight || "").replace(/ ?kg$/i, "")}
                   onChange={(e) => onChange({ ...exercise, weight: e.target.value })}
                   className="pr-8"
                   type="number"

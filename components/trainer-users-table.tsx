@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Search, Pencil, Eye, Save, X } from "lucide-react"
+import { Search, Eye } from "lucide-react"
 import { updateAssignedUser } from "@/app/actions/trainer-actions"
 import { toast } from "sonner"
 
